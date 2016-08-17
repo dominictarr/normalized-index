@@ -1,0 +1,6 @@
+# normalized-index
+
+
+## License
+
+MIT

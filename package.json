@@ -1,0 +1,21 @@
+{
+  "name": "normalized-index",
+  "description": "",
+  "version": "0.0.0",
+  "homepage": "https://github.com/dominictarr/normalized-index",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/normalized-index.git"
+  },
+  "dependencies": {
+    "pull-stream": "^3.4.3"
+  },
+  "devDependencies": {
+    "tape": "^4.6.0"
+  },
+  "scripts": {
+    "test": "set -e; for t in test/*.js; do node $t; done"
+  },
+  "author": "'Dominic Tarr' <dominic.tarr@gmail.com> (dominictarr.com)",
+  "license": "MIT"
+}
