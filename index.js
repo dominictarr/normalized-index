@@ -1,3 +1,4 @@
+'use strict'
 var search = require('binary-search-async')
 var pull = require('pull-stream')
 
@@ -37,8 +38,9 @@ module.exports = function (log, compare, decode) {
     search: function (target, cb) {
       sort()
       //we need to know the maximum value
-      search(get, target, compare, 0, index.length, function (err, value, idx) {
-        cb(err, value, index[idx < 0 ? ~idx : idx].key, idx)
+      search(get, target, compare, 0, index.length - 1, function (err, value, idx, exact) {
+        idx = Math.min(idx, index.length - 1)
+          cb(err, value, index[idx].key, idx, exact)
       })
     },
     serialize: function () {
@@ -53,4 +55,8 @@ module.exports = function (log, compare, decode) {
     }
   }
 }
+
+
+
+
 
