@@ -41,12 +41,13 @@ tape('more', function (t) {
   log.append(encode({key: 'LMN', seq: 2}), function (err, offset1) {
     if(err) throw err
     log.append(encode({key: 'XYZ', seq: 3}), function (err, offset2) {
-      index.search({key: 'LMN'}, function (err, value, offset) {
+      index.search({key: 'LMN'}, function (err, value, offset, i, exact) {
         if(err) throw err
         console.log(offset, value)
         t.equal(offset, offset1, 'offsets are equal')
         t.equal(value.key, 'LMN')
-        console.log('offsuet', offset)
+        console.log('offset', offset)
+        t.equal(exact, true)
         log.get(offset, function (err, _value) {
           t.deepEqual(value, decode(_value))
           t.end()
@@ -101,8 +102,9 @@ tape('serialize', function (t) {
       if(i === a.length) return t.end()
       var target = a[i++]
       console.log('search for:', target)
-      table.search(target, function (err, value) {
+      table.search(target, function (err, value, _, __, exact) {
         t.deepEqual(value, target)
+        t.equal(exact, true)
         loop()
       })
     })()
@@ -111,16 +113,16 @@ tape('serialize', function (t) {
 
 tape('partial', function (t) {
   var target = {key:'pq'}
-  index.search(target, function (err, value, offset, i) {
+  index.search(target, function (err, value, offset, i, exact) {
     if(err) throw err
     console.log(offset, value)
-
+    t.equal(exact, false)
     t.ok(compare(value, target) < 0, 'search returns value before target')
-    index.get((~i)+1, function (err, _value, _offset, j) {
+    index.get(i+1, function (err, _value, _offset, j) {
       if(err) throw err
       console.log(_offset, _value)
       t.ok(compare(_value, target) > 0, 'get i+1 value after target')
-      t.equal(~i + 1, j)
+      t.equal(i + 1, j)
       t.end()
     })
   })
