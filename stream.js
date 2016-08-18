@@ -1,18 +1,18 @@
+'use strict'
 module.exports = function (index, opts) {
   opts = opts || {}
-  var idx, reverse, start, stop
   var lower, upper, l_index, u_index
+  var u_incl, l_incl
   var error
 
-  if(upper = opts.max || opts.lte) u_inclusive = 0
-  else if(upper = opts.lt)         u_inclusive = -1
+  if(upper = opts.max || opts.lte) u_incl = 0
+  else if(upper = opts.lt)         u_incl = -1
 
-  if(lower = opts.min || opts.gte) l_inclusive = 0
-  else if(lower = opts.gt)         l_inclusive = 1
+  if(lower = opts.min || opts.gte) l_incl = 0
+  else if(lower = opts.gt)         l_incl = 1
 
-  if(upper === undefined)          u_index = index.length() - 1
-
-  if(lower === undefined)          l_index = 0
+  if(upper === undefined) u_index = index.length() - 1
+  if(lower === undefined) l_index = 0
 
   var keys = opts.keys === true
   var values = opts.values !== false
@@ -37,14 +37,16 @@ module.exports = function (index, opts) {
       //if we have a index bounded at both ends,
       //search for both ends, then just iterate between them.
       if(lower !== undefined)
-        index.search(lower, function (err, _, _ , i) {
+        index.search(lower, function (err, _, __, i) {
           if(error) return; if(err) return cb(error = err)
-          l_index = i + l_inclusive; ready()
+          l_index = i + l_incl; ready()
         })
       if(upper !== undefined)
-        index.search(upper, function (err, _, _, i) {
+        index.search(upper, function (err, _, __, i, exact) {
           if(error) return; if(err) return cb(error = err)
-          u_index = u_inclusive + i; ready()
+          u_index = i + u_incl - (exact ? 0 : 1);
+
+          ready()
         })
       function ready () {
         if(l_index === undefined || u_index == undefined) return
