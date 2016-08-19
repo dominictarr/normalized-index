@@ -10,7 +10,7 @@ module.exports = function (table, log, compare, decode) {
     setImmediate(function () {
       log.get(offset(i), function (err, value) {
         value = decode(value)
-        cb(null, value)
+        cb(null, value, offset(i))
       })
     })
   }
@@ -20,17 +20,14 @@ module.exports = function (table, log, compare, decode) {
     search: function (target, cb) {
       //we need to know the maximum value
       search(get, target, compare, 0, max-1, function (err, value, idx, exact) {
-        idx = Math.min(idx, max-1)
-        cb(err, value, offset(idx), idx, exact)
+        var key
+        if(idx >= 0) {
+          idx = Math.min(idx, max - 1)
+          key = offset(idx)
+        }
+        cb(err, value, key, idx, exact)
       })
     }
   }
-
 }
-
-
-
-
-
-
 
