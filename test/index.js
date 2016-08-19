@@ -118,13 +118,31 @@ tape('partial', function (t) {
     console.log(offset, value)
     t.equal(exact, false)
     t.ok(compare(value, target) < 0, 'search returns value before target')
-    index.get(i+1, function (err, _value, _offset, j) {
+    index.get(~i+1, function (err, _value, _offset, j) {
       if(err) throw err
       console.log(_offset, _value)
       t.ok(compare(_value, target) > 0, 'get i+1 value after target')
-      t.equal(i + 1, j)
+      t.equal(~i + 1, j)
       t.end()
     })
+  })
+})
+
+tape('out of bounds', function (t) {
+
+  index.search({key: 'zzz'}, function (err, value, offset, i, exact) {
+    t.equal(~i, index.length())
+    console.log(err, value, offset, i)
+    t.end()
+  })
+})
+
+
+tape('out of bounds', function (t) {
+  index.search({key: '!'}, function (err, value, offset, i, exact) {
+    t.equal(i, -1)
+    console.log(err, value, offset, i)
+    t.end()
   })
 })
 
