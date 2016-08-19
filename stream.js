@@ -1,6 +1,39 @@
 'use strict'
-module.exports = function (index, opts) {
+var Merge = require('pull-merge')
+var pull = require('pull-stream/pull')
+var Map = require('pull-stream/throughs/map')
+
+function flip(cmp) {
+  return function (a, b) {
+    return cmp(a, b)*-1
+  }
+}
+
+module.exports = function Stream (index, opts, compare) {
   opts = opts || {}
+  if(Array.isArray(index)) {
+
+    // if index is an array of indexes, search all of them and merge.
+    // this is correct, but likely not optimal in the case of
+    // Log Structered Merge. I figure that a LSM merge likely has one index
+    // much larger than another ("sparse merge") so you could search ahead to find i: B[i] < A[j]
+    // then output the intermediate keys (since an LSM of a normalized index only needs keys)
+
+    var keys = opts.keys === true
+    var values = opts.values !== false
+    opts.keys = true
+    opts.values = true
+    return pull(
+      Merge(index.map(function (i) { return Stream(i, opts) }), function (a, b) {
+        return compare(a, b) * (opts.reverse ? -1 : 1)
+      }),
+      Map(function (e) {
+        return keys && values ? e : keys ? e.key : e.value
+      })
+    )
+
+  }
+
   var lower, upper, l_index, u_index
   var u_incl, l_incl
   var error
@@ -39,13 +72,15 @@ module.exports = function (index, opts) {
       if(lower !== undefined)
         index.search(lower, function (err, _, __, i) {
           if(error) return; if(err) return cb(error = err)
-          l_index = i + l_incl; ready()
+          l_index = (i<0?~i:i)  + l_incl
+          l_index = Math.max(l_index, 0)
+          ready()
         })
       if(upper !== undefined)
         index.search(upper, function (err, _, __, i, exact) {
           if(error) return; if(err) return cb(error = err)
-          u_index = i + u_incl - (exact ? 0 : 1);
-
+          u_index = (i<0?~i:i) + u_incl - (exact ? 0 : 1);
+          u_index = Math.min(u_index, index.length() - 1)
           ready()
         })
       function ready () {
@@ -57,4 +92,8 @@ module.exports = function (index, opts) {
       next(cb)
   }
 }
+
+
+
+
 
