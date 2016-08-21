@@ -8,8 +8,11 @@
     "url": "git://github.com/dominictarr/normalized-index.git"
   },
   "dependencies": {
+    "pull-cat": "^1.1.11",
+    "pull-group": "^1.0.0",
     "pull-merge": "^1.0.2",
-    "pull-stream": "^3.4.3"
+    "pull-stream": "^3.4.3",
+    "pull-write-file": "^0.2.1"
   },
   "devDependencies": {
     "tape": "^4.6.0"
