@@ -1,5 +1,6 @@
 
 var tape = require('tape')
+var pull = require('pull-stream')
 
 var Offset = require('offset-log')
 var Index = require('../')
@@ -11,12 +12,16 @@ var dir = '/tmp/test-normalized-index_'+Date.now()
 mkdirp.sync(dir)
 
 var log = Offset(dir+'/log')
-console.log(dir)
 
 function compare (a, b) {
   return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
 }
-var index = Index(log, compare, decode)
+var index = Index(/*log, */compare, decode)
+
+pull(
+  log.stream({live: true, keys: true, value: true}),
+  pull.drain(index.add)
+)
 
 function encode (value) {
   return new Buffer(JSON.stringify(value))
@@ -147,4 +152,5 @@ tape('out of bounds, low', function (t) {
     t.end()
   })
 })
+
 

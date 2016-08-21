@@ -3,9 +3,11 @@ var tape = require('tape')
 var Offset = require('offset-log')
 var Index = require('../')
 var IndexTable = require('../table')
+var IndexFile = require('../file-table')
 var Stream = require('../stream')
 var pull = require('pull-stream')
 var mkdirp = require('mkdirp')
+var fs = require('fs')
 
 var dir = '/tmp/test-normalized-index_'+Date.now()
 mkdirp.sync(dir)
@@ -23,7 +25,17 @@ function decode (value) {
 function compare (a, b) {
   return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
 }
-var index = Index(log, compare, decode)
+var index = Index(compare, decode)
+var index2, fileTable
+pull(
+  log.stream({live: true, keys: true, values: true}),
+  pull.drain(function (data) {
+    index.add(data)
+    if(index2)
+      index2.add(data)
+  })
+)
+
 var table, table2
 
 var alpha = 'abcdefghijklmnopqrstuvwxyz'
@@ -43,7 +55,7 @@ tape('alphabet', function (t) {
   ;(function loop () {
     if(i === N) {
       table2 = IndexTable(index.serialize(), log, compare, decode)
-      index2 = Index(log, compare, decode, false)
+      index2 = Index(compare, decode, false)
     }
     if(i === a.length) t.end()
     else log.append(encode(a[i++]), loop)
@@ -52,7 +64,11 @@ tape('alphabet', function (t) {
 })
 
 tape('create table', function (t) {
-  table = IndexTable(index.serialize(), log, compare, decode)
+  var buf = index.serialize()
+  table = IndexTable(buf, log, compare, decode)
+  var file = dir+'/table'
+  fs.writeFileSync(file, buf)
+  fileTable = IndexFile(file, log, compare, decode)
 
   console.log('index.length', index.length())
   console.log('table.length', table.length())
@@ -124,6 +140,7 @@ function test(name, _opts, fn) {
     }
     tests('mem:', index)
     tests('table:', table)
+    tests('file:', fileTable)
     tests('merge:', [table2, index2])
   })
 }
@@ -237,11 +254,6 @@ for(var n = 0; n < 10; n++) (function () {
     }))
   })
 })()
-
-
-
-
-
 
 
 
