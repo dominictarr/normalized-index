@@ -19,6 +19,9 @@ module.exports = function Stream (index, opts, compare) {
     // much larger than another ("sparse merge") so you could search ahead to find i: B[i] < A[j]
     // then output the intermediate keys (since an LSM of a normalized index only needs keys)
 
+    if(index.length === 1)
+      return Stream(index[0], opts, compare)
+
     var keys = opts.keys === true
     var values = opts.values !== false
     opts.keys = true
@@ -74,8 +77,7 @@ module.exports = function Stream (index, opts, compare) {
           if(error) return; if(err) return cb(error = err)
           l_index = (i < 0 ? ~i + 1 : i)  + l_incl;
           l_index = Math.max(l_index, 0)
-          if(~i === index.length()-1)
-            l_index ++
+          if(~i === index.length()-1) l_index ++
           ready()
         })
       if(upper !== undefined)
@@ -94,4 +96,5 @@ module.exports = function Stream (index, opts, compare) {
       next(cb)
   }
 }
+
 
