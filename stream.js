@@ -72,14 +72,16 @@ module.exports = function Stream (index, opts, compare) {
       if(lower !== undefined)
         index.search(lower, function (err, _, __, i) {
           if(error) return; if(err) return cb(error = err)
-          l_index = (i<0?~i:i)  + l_incl
+          l_index = (i < 0 ? ~i + 1 : i)  + l_incl;
           l_index = Math.max(l_index, 0)
+          if(~i === index.length()-1)
+            l_index ++
           ready()
         })
       if(upper !== undefined)
-        index.search(upper, function (err, _, __, i, exact) {
+        index.search(upper, function (err, _, __, i) {
           if(error) return; if(err) return cb(error = err)
-          u_index = (i<0?~i:i) + u_incl - (exact ? 0 : 1);
+          u_index = (i < 0 ? ~i - 1 : i) + u_incl
           u_index = Math.min(u_index, index.length() - 1)
           ready()
         })
@@ -92,8 +94,4 @@ module.exports = function Stream (index, opts, compare) {
       next(cb)
   }
 }
-
-
-
-
 
