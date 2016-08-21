@@ -1,9 +1,12 @@
 'use strict'
 var search = require('binary-search-async')
 module.exports = function (table, log, compare, decode) {
+  if(!Buffer.isBuffer(table)) throw new Error('table should be a buffer')
+
   function offset(index) {
     return table.readUInt32BE(4+index*4)
   }
+
   var max = table.length/4 - 1
 
   function get (i, cb) {
@@ -25,6 +28,5 @@ module.exports = function (table, log, compare, decode) {
     }
   }
 }
-
 
 
