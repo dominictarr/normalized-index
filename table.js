@@ -19,15 +19,12 @@ module.exports = function (table, log, compare, decode) {
     length: function () { return max },
     search: function (target, cb) {
       //we need to know the maximum value
-      search(get, target, compare, 0, max-1, function (err, value, idx, exact) {
-        var key
-        if(idx >= 0) {
-          idx = Math.min(idx, max - 1)
-          key = offset(idx)
-        }
-        cb(err, value, key, idx, exact)
+      search(get, target, compare, 0, max, function (err, value, idx, exact) {
+        cb(err, value, idx >= 0 ? offset(idx) : null, idx, exact)
       })
     }
   }
 }
+
+
 

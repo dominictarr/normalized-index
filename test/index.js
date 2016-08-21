@@ -29,9 +29,10 @@ function decode (value) {
 tape('simple', function (t) {
   log.append(encode({key: 'ABC', seq: 1}), function (err, _offset) {
     if(err) throw err
-    index.search({key: 'ABC'}, function (err, value, offset) {
+    index.search({key: 'ABC'}, function (err, value, offset, i) {
       if(err) throw err
       t.equal(offset, _offset)
+      t.equal(i, 0)
       t.end()
     })
   })
@@ -128,17 +129,18 @@ tape('partial', function (t) {
   })
 })
 
-tape('out of bounds', function (t) {
+tape('out of bounds, high', function (t) {
 
   index.search({key: 'zzz'}, function (err, value, offset, i, exact) {
-    t.equal(~i, index.length())
+    console.log('index', ~i, index.length())
+    t.equal(~i, index.length()-1)
     console.log(err, value, offset, i)
     t.end()
   })
 })
 
 
-tape('out of bounds', function (t) {
+tape('out of bounds, low', function (t) {
   index.search({key: '!'}, function (err, value, offset, i, exact) {
     t.equal(i, -1)
     console.log(err, value, offset, i)

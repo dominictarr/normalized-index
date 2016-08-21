@@ -14,6 +14,7 @@ module.exports = function (log, compare, decode, old) {
     pull.drain(function (data) {
       max = data.key
       sorted = false
+      if(Math.random() < 0.001)console.log(data.key)
       index.push({key: data.key, value: decode(data.value)})
     })
   )
@@ -41,13 +42,8 @@ module.exports = function (log, compare, decode, old) {
     search: function (target, cb) {
       sort()
       //we need to know the maximum value
-      search(get, target, compare, 0, index.length - 1, function (err, value, idx, exact) {
-        var key
-        if(idx >= 0) {
-          idx = Math.min(idx, index.length - 1)
-          key = index[idx].key
-        }
-        cb(err, value, key, idx, exact)
+      search(get, target, compare, 0, index.length, function (err, value, idx, exact) {
+        cb(err, value, idx >= 0 ? index[idx].key : null, idx, exact)
       })
     },
     serialize: function () {
@@ -62,6 +58,11 @@ module.exports = function (log, compare, decode, old) {
     }
   }
 }
+
+
+
+
+
 
 
 
