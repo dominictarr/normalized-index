@@ -135,37 +135,21 @@ test('everthing', {}, function (t, ary) {
 var i = ~~(Math.random() * a.length)
 var target = a[i]
 
+function assertEmpty(t, ary) {
+  if(!ary.length) return
+  t.ok(false, 'should be empty:'+JSON.stringify(ary))
+}
 
-test('empty stream, before start, closed', {gt: {key:'!'}, lt: {key:'!!'}}, function (t, ary) {
-  if(ary.length) throw new Error('should be empty')
-})
-
-test('empty stream, before start, open', {lt: {key:'!!'}}, function (t, ary) {
-  if(ary.length) throw new Error('should be empty')
-})
-
-
-test('empty stream, lte start, open', {lte: {key:'!!'}}, function (t, ary) {
-  if(ary.length) throw new Error('should be empty')
-})
-
-
-
-test('empty stream, before after end, closed', {gt: {key:'~'}, lt: {key:'~~'}}, function (t, ary) {
-  if(ary.length) throw new Error('should be empty')
-})
-
-test('empty stream, before after end, open', {gt: {key:'~'}}, function (t, ary) {
-  if(ary.length) throw new Error('should be empty')
-})
-
-test('empty stream, >= end, open', {gte: {key:'~'}}, function (t, ary) {
-  console.log(ary)
-  if(ary.length) throw new Error('should be empty')
-})
+test('empty stream, before start, closed', {gt: {key:'!'}, lt: {key:'!!'}}, assertEmpty)
+test('empty stream, before start, open', {lt: {key:'!!'}}, assertEmpty)
+test('empty stream, lte !! start, open', {lte: {key:'!!'}}, assertEmpty)
+test('empty stream, before after end, closed', {gt: {key:'~'}, lt: {key:'~~'}}, assertEmpty)
+test('empty stream, before after end, open', {gt: {key:'~'}}, assertEmpty)
+test('empty stream, >= end, open', {gte: {key:'~'}}, assertEmpty)
 
 
 test('stream to half-way : >='+target.key, {gte: target}, function (t, ary) {
+  console.log(ary, target)
   t.ok(ary.every(function (e) {
     if(!(compare(e, target) >= 0)) throw new Error(e.key+'>='+target.key)
     return true
@@ -253,5 +237,14 @@ for(var n = 0; n < 10; n++) (function () {
     }))
   })
 })()
+
+
+
+
+
+
+
+
+
 
 
