@@ -60,9 +60,3 @@ module.exports = function (compare, decode) {
   }
 }
 
-
-
-
-
-
-

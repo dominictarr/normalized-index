@@ -55,7 +55,6 @@ pull(
   log.stream({live: true, keys: true, values: true}),
   pull.drain(function (data) {
     console.log(data)
-  //  c.add(data)
     c2.add(data)
   })
 )
@@ -77,4 +76,5 @@ function next () {
     console.log('done')
   })
 }
+
 
