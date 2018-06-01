@@ -88,7 +88,7 @@ module.exports = function Stream (index, opts, compare) {
           ready()
         })
       function ready () {
-        if(l_index === undefined || u_index == undefined) return
+        if(l_index === undefined || u_index === undefined) return
         next(cb)
       }
     }
@@ -96,5 +96,4 @@ module.exports = function Stream (index, opts, compare) {
       next(cb)
   }
 }
-
 
