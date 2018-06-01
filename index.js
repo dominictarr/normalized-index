@@ -3,9 +3,7 @@ var search = require('binary-search-async')
 var pull = require('pull-stream')
 
 //this is an in-memory index, must be rebuilt from the log.
-module.exports = function (compare, decode) {
-  if('function' !== typeof decode)
-    throw new Error('decode is not function')
+module.exports = function (compare) {
   if('function' !== typeof compare)
     throw new Error('compare is not function')
   //read the current max from the end of the start of the index file.
@@ -25,7 +23,7 @@ module.exports = function (compare, decode) {
   function get (i, cb) {
     sort()
     if(i < 0 || i >= index.length)
-      cb(new Error('out of bounds'))
+      cb(new RangeError('out of bounds:'+i))
     else
       cb(null, index[i].value, index[i].key, i)
   }
@@ -38,13 +36,13 @@ module.exports = function (compare, decode) {
       if(data.sync) return
       max = data.key
       sorted = false
-      index.push({key: data.key, value: decode(data.value)})
+      index.push(data)
     },
     search: function (target, cb) {
       sort()
       //we need to know the maximum value
-      search(get, target, compare, 0, index.length, function (err, value, idx, exact) {
-        cb(err, value, idx >= 0 ? index[idx].key : null, idx, exact)
+      search(get, target, compare, 0, index.length-1, function (err, idx, value) {
+        cb(err, value, idx >= 0 ? index[idx].key : null, idx, idx>=0)
       })
     },
     serialize: function () {

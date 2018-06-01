@@ -1,6 +1,6 @@
 'use strict'
 var search = require('binary-search-async')
-module.exports = function (table, log, compare, decode) {
+module.exports = function (table, log, compare) {
   if(!Buffer.isBuffer(table)) throw new Error('table should be a buffer')
 
   function offset(index) {
@@ -12,7 +12,6 @@ module.exports = function (table, log, compare, decode) {
   function get (i, cb) {
     setImmediate(function () {
       log.get(offset(i), function (err, value) {
-        value = decode(value)
         cb(null, value, offset(i))
       })
     })
@@ -22,8 +21,8 @@ module.exports = function (table, log, compare, decode) {
     length: function () { return max },
     search: function (target, cb) {
       //we need to know the maximum value
-      search(get, target, compare, 0, max, function (err, value, idx, exact) {
-        cb(err, value, idx >= 0 ? offset(idx) : null, idx, exact)
+      search(get, target, compare, 0, max, function (err, idx, value, exact) {
+        cb(err, value, idx >= 0 ? offset(idx) : null, idx, idx >= 0)
       })
     }
   }
