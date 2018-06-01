@@ -8,6 +8,8 @@
     "url": "git://github.com/dominictarr/normalized-index.git"
   },
   "dependencies": {
+    "aligned-block-file": "^1.1.2",
+    "binary-search-async": "^1.0.0",
     "pull-cat": "^1.1.11",
     "pull-group": "^1.0.0",
     "pull-merge": "^1.0.2",
@@ -15,6 +17,11 @@
     "pull-write-file": "^0.2.1"
   },
   "devDependencies": {
+    "flumecodec": "0.0.1",
+    "flumedb": "^0.4.6",
+    "flumelog-offset": "^3.3.0",
+    "flumeview-level": "^3.0.5",
+    "rimraf": "^2.6.2",
     "tape": "^4.6.0"
   },
   "scripts": {
@@ -23,3 +30,4 @@
   "author": "'Dominic Tarr' <dominic.tarr@gmail.com> (dominictarr.com)",
   "license": "MIT"
 }
+
