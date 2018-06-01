@@ -1,6 +1,6 @@
 var tape = require('tape')
 
-var Offset = require('offset-log')
+var FlumeLog = require('flumelog-offset')
 var Index = require('../')
 var IndexTable = require('../table')
 var IndexFile = require('../file-table')
@@ -12,27 +12,19 @@ var fs = require('fs')
 var dir = '/tmp/test-normalized-index_'+Date.now()
 mkdirp.sync(dir)
 
-var log = Offset(dir+'/log')
-
-function encode (value) {
-  return new Buffer(JSON.stringify(value))
-}
-
-function decode (value) {
-  return JSON.parse(value.toString())
-}
+var log = FlumeLog(dir+'/log', {codec: require('flumecodec/json')})
 
 function compare (a, b) {
   return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
 }
-var index = Index(compare, decode)
+var index = Index(compare)
 var index2, fileTable
 pull(
   log.stream({live: true, keys: true, values: true}),
   pull.drain(function (data) {
-    index.add(data)
+    index.add({key:data.seq, value: data.value})
     if(index2)
-      index2.add(data)
+      index2.add({key:data.seq, value: data.value})
   })
 )
 
@@ -54,21 +46,21 @@ tape('alphabet', function (t) {
   var i = 0
   ;(function loop () {
     if(i === N) {
-      table2 = IndexTable(index.serialize(), log, compare, decode)
-      index2 = Index(compare, decode, false)
+      table2 = IndexTable(index.serialize(), log, compare)
+      index2 = Index(compare)
     }
     if(i === a.length) t.end()
-    else log.append(encode(a[i++]), loop)
+    else log.append(a[i++], loop)
   })()
 
 })
 
 tape('create table', function (t) {
   var buf = index.serialize()
-  table = IndexTable(buf, log, compare, decode)
+  table = IndexTable(buf, log, compare)
   var file = dir+'/table'
   fs.writeFileSync(file, buf)
-  fileTable = IndexFile(file, log, compare, decode)
+  fileTable = IndexFile(file, log, compare)
 
   console.log('index.length', index.length())
   console.log('table.length', table.length())
@@ -164,7 +156,6 @@ test('empty stream, before after end, closed', {gt: {key:'~'}, lt: {key:'~~'}}, 
 test('empty stream, before after end, open', {gt: {key:'~'}}, assertEmpty)
 test('empty stream, >= end, open', {gte: {key:'~'}}, assertEmpty)
 
-
 test('stream to half-way : >='+target.key, {gte: target}, function (t, ary) {
   console.log(ary, target)
   t.ok(ary.every(function (e) {
@@ -254,9 +245,4 @@ for(var n = 0; n < 10; n++) (function () {
     }))
   })
 })()
-
-
-
-
-
 

@@ -1,4 +1,4 @@
-var Log = require('offset-log')
+var FlumeLog = require('flumelog-offset')
 var pull = require('pull-stream')
 
 var mkdirp = require('mkdirp')
@@ -13,15 +13,7 @@ mkdirp.sync(dir)
 mkdirp.sync(index_dir)
 mkdirp.sync(index_dir2)
 
-var log = Log(dir+'/log')
-
-function encode (obj) {
-  return new Buffer(JSON.stringify(obj))
-}
-
-function decode (b) {
-  return JSON.parse(b.toString())
-}
+var log = FlumeLog(dir+'/log', {codec: require('flumecodec/json')})
 
 var n = 4
 var a = [
@@ -31,10 +23,10 @@ var a = [
   {foo: false, bar: false, r: Math.random()}
 ]
 
-log.append(encode(a[0]), next)
-log.append(encode(a[1]), next)
-log.append(encode(a[2]), next)
-log.append(encode(a[3]), next)
+log.append(a[0], next)
+log.append(a[1], next)
+log.append(a[2], next)
+log.append(a[3], next)
 
 function cmp (a, b) {
   return a < b ? -1 : a > b ? 1 : 0
@@ -49,13 +41,13 @@ function compare2 (a,b) {
 }
 
 //var c = Compact(log, index_dir, compare, decode)
-var c2 = Compact(log, index_dir2, compare2, decode)
+var c2 = Compact(log, index_dir2, compare2)
 
 pull(
   log.stream({live: true, keys: true, values: true}),
   pull.drain(function (data) {
     console.log(data)
-    c2.add(data)
+    c2.add({key:data.seq, value: data.value})
   })
 )
 
@@ -76,5 +68,4 @@ function next () {
     console.log('done')
   })
 }
-
 
