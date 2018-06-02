@@ -1,3 +1,4 @@
+'use strict'
 /*
   merge two indexes, but don't read every value.
   take the next value from a, then search for that value in b.
@@ -20,6 +21,11 @@
   the cache works well, because the first few queries will be in the
   cache. It would be even better to skip these comparsons, while
   maintaining alignment though.
+
+  XXX: this code _looks elegant_ but it's slower than streaming
+  the whole thing. seems like too many seaches. so should solve
+  that above problem. on a uniformly random ordering ranges are
+  too small for this method to help much.
 */
 
 module.exports = function (a, b) {
@@ -41,13 +47,17 @@ module.exports = function (a, b) {
         b.search(value, function (err, _, __, _j) {
           if(_j < 0) _j = ~_j
           b.range(j, _j-1, function (err, range) {
-            var tmp = b
-            b = a; a = tmp; j = i; i = _j
-            if(range.length) cb(err, range)
-            else read(null, cb)
+            var tmp = b; b = a; a = tmp; j = i; i = _j
+            setImmediate(function () {
+              if(range.length) cb(err, range)
+              else read(null, cb)
+            })
           })
         })
       })
     }
 }
+
+
+
 
