@@ -1,6 +1,6 @@
 var FlumeLog = require('flumelog-offset')
 var pull = require('pull-stream')
-
+var tape = require('tape')
 var mkdirp = require('mkdirp')
 var Compact = require('../compact')
 var rimraf = require('rimraf')
@@ -46,26 +46,29 @@ var c2 = Compact(log, index_dir2, compare2)
 pull(
   log.stream({live: true, keys: true, values: true}),
   pull.drain(function (data) {
-    console.log(data)
     c2.add({key:data.seq, value: data.value})
   })
 )
 
 function next () {
   if(--n) return
-  c2.compact(function (err) {
-    if(err) throw err
-    setTimeout(function () {
-      pull(c2.stream({keys: true, live: false}), pull.collect(function (err, ary) {
-        if(err) throw err
-        console.log(ary)
-        console.log(a)
-      }))
+  tape('compact', function (t) {
+    c2.compact(function (err) {
+      if(err) throw err
+      setTimeout(function () {
+        pull(c2.stream({keys: true, live: false}), pull.collect(function (err, ary) {
+          if(err) throw err
+          console.log(ary)
+          console.log(a)
+          t.deepEqual(ary, a)
+          t.end()
+        }))
+      })
     })
-  })
 
-  c2.compact(function (err) {
-    console.log('done')
+    c2.compact(function (err) {
+      console.log('done')
+    })
   })
 }
 
