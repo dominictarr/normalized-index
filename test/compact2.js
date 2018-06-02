@@ -28,7 +28,7 @@ pull(
   })
 )
 
-var data = [], N = 10000
+var data = [], N = 20000
 for(var i = 0; i < N; i++)
   data.push({key: Math.random(), i: i, stage: 1, mod: !!(i%10)})
 
@@ -93,5 +93,7 @@ tape('compact3', function (t) {
     equals(t, data.concat(data2).concat(data3))
   })
 })
+
+
 
 

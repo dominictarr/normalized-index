@@ -5,7 +5,7 @@ var pull = require('pull-stream')
 
 var FlumeLog = require('flumelog-offset')
 var json = require('flumecodec/json')
-var Index = require('../')
+var Index = require('../memory')
 var Table = require('../table')
 var FileTable = require('../file-table')
 var Stream = require('../stream')

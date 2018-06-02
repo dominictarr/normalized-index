@@ -6,9 +6,9 @@ var Flume = require('flumedb')
 var FlumeLog = require('flumelog-offset')
 var FlumeViewLevel = require('flumeview-level')
 var json = require('flumecodec/json')
-var Index = require('../')
+var Index = require('../memory')
 var IndexTable = require('../table')
-
+var FileTable = require('../file-table')
 var mkdirp = require('mkdirp')
 var rmrf = require('rimraf')
 
@@ -46,16 +46,15 @@ function hash (s) {
   return crypto.createHash('sha256').update(s.toString()).digest('base64')
 }
 
-var raw_table = fs.readFileSync(path.join(dir, 'table'))
-
-var table = IndexTable(raw_table, log, compare)
+var table = FileTable(path.join(dir, 'table'), log, compare)
 
 var target = {hash: hash(+process.argv[2])}
 var target2 = {hash: hash(+process.argv[3])}
 
 console.log('targets', target.hash, target2.hash)
+var level = process.argv[2] == 'level'
 
-var targets = process.argv.slice(2).map(hash)
+var targets = process.argv.slice(2).filter(Number).map(hash)
 
 ;(function next () {
   var start = Date.now()
@@ -64,15 +63,14 @@ var targets = process.argv.slice(2).map(hash)
     if(!targets.length) return
     
     start = Date.now()
-    var target = {hash: hash(+process.argv[2])}
-    table.search({hash: targets.shift()}, function (err, value, offset) {
-//    db.level.get(targets.shift(), function (err, value, offset) {
-      console.log('ni', Date.now()-start, value, offset)
+    var query = {hash: targets.shift()}
+
+    if(level) db.level.get(query.hash, cb)
+    else      table.search(query, cb)
+
+    function cb (err, value, offset) {
+      console.log(level ? 'level' : 'ni', Date.now()-start, value, offset)
       next()
-    })
-  //})
-
+    }
 })()
-
-
 

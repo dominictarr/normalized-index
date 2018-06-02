@@ -1,7 +1,7 @@
 var tape = require('tape')
 
 var FlumeLog = require('flumelog-offset')
-var Index = require('../')
+var Index = require('../memory')
 var IndexTable = require('../table')
 var IndexFile = require('../file-table')
 var Stream = require('../stream')
