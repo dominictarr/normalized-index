@@ -24,20 +24,20 @@ mkdirp.sync(dir)
 var log = FlumeLog(path.join(dir, 'log'), {codec: json})
 
 var _get = log.get, gets = 0
-var cache = Cache(1024*16)
-log.get = function (offset, cb) {
-  gets++
-  var value = cache.get(offset)
-  if(value) return cb(null, value)
-  _get(offset, function (err, value) {
-    if(err) return cb(err)
-    cache.set(offset, value)
-    cb(err, value)
-  })
-}
+//var cache = Cache(1024)
+//log.get = function (offset, cb) {
+//  gets++
+//  var value = cache.get(offset)
+//  if(value) return cb(null, value)
+//  _get(offset, function (err, value) {
+//    if(err) return cb(err)
+//    cache.set(offset, value)
+//    cb(err, value)
+//  })
+//}
 
 function compare (a, b) {
-  return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+  return a.key < b.key ? -1 : a.key > b.key ? 1 : 0 || a.key2 - b.key2
 }
 //var compactor = Compact(log, dir, compare)
 var i = 0
@@ -56,13 +56,18 @@ var very_start = Date.now()
 function shuffel (data) {
   return data.sort(function () { return Math.random() - 0.5 })
 }
-var J = 3
+var J = 5, I = 0
 ;(function next (j) {
   var data = [], N = 10000
   if(j>J) return next2()
-  for(var i = 0; i < N*Math.pow(j, 1.7); i++) {
+  for(var i = 0; i < N*Math.pow(j, 1.5); i++) {
+    var d = data[~~(Math.pow(Math.random(), 4)*data.length)]
+//    console.log(d && d.random)
     data.push({
-      key: Math.random(),
+      key: ~~(Math.pow(Math.random(), 3)*1000),//,d ? d.random : 0,
+        //I++ + (Math.random() - 0.5) * 10000,
+      key2: I+++ (Math.random() - 0.5) * 1000,
+      random: Math.random(),
       i: i, stage: j, mod: !!(i%10),
       text: random
     })
@@ -85,7 +90,6 @@ var J = 3
 var indexes = []
 function next2 () {
   console.log('NEXT2')
-  SEARCH = 0 //scanning the whole thing doesn't search at all...
   for(var j = 1; j <= J; j++) {
     console.log('open', 'level'+j)
     indexes.push(FileTable(path.join(dir, 'level'+j), log, compare))
@@ -114,9 +118,8 @@ function next_merge (i) {
   if(!b) return console.log('done')
   var filename = path.join(dir, 'level_merge'+i)
   var start = Date.now(), c = 0, t = 0,K=0
-  SEARCH = 0
   pull(
-    SparseMerge(a, b),
+    SparseMerge(a, b, compare),
     pull.map(function (ary) {
       c ++; t += Buffer.isBuffer(ary) ? ary.length/4 : ary.length 
       if(Buffer.isBuffer(ary)) return ary
@@ -125,39 +128,45 @@ function next_merge (i) {
         buf.writeUInt32BE(ary[i], i*4)
       return buf
     }),
-    pull.collect(function (err, ary) {
-      console.log('merged', c, t, t/c, Date.now()-start, gets, SEARCH)
-      var b =Buffer.concat(ary)
-      start = Date.now()
-      fs.writeFile(filename, b, function (err) {
-        console.log('written:', b.length, Date.now()-start)
-        var new_table = FileTable(filename, log, compare)
-        indexes.unshift(new_table)
-        new_table.ready(function () {
-          next_merge(i+1)
+    //I have two modes here, because I was trying to understand
+    //why sparse-merge was slow. answer: it's not good with uniform randomness.
+    false
+    ?  pull.collect(function (err, ary) {
+        console.log('merged', c, t, t/c, Date.now()-start, gets)
+        var b =Buffer.concat(ary)
+        start = Date.now()
+        fs.writeFile(filename, b, function (err) {
+          console.log('written:', b.length, Date.now()-start)
+          var new_table = FileTable(filename, log, compare)
+          indexes.unshift(new_table)
+          new_table.ready(function () {
+            next_merge(i+1)
+          })
         })
       })
-    })
+    : pull(
+//        Group(100),
+//        pull.map(function (ary) {
+//          K++
+//          return Buffer.concat(ary)
+//        }),
+        WriteFile(filename, function (err, val) {
+          if(err) throw err
+          console.log('merged', c, t, t/c, Date.now()-start, gets)
+            var new_table = FileTable(filename, log, compare)
+          indexes.unshift(new_table)
+          new_table.ready(function () {
+            next_merge(i+1)
+          })
+        })
+      )
   )
 //    Group(1024),
 /*
-    pull.map(function (ary) {
-      K++
-      return Buffer.concat(ary)
-    }),
-    WriteFile(filename, function (err, val) {
-      if(err) throw err
-      console.log('merged', c, K, t, t/c, t/K, Date.now()-start, gets)
-      var new_table = FileTable(filename, log, compare)
-      indexes.unshift(new_table)
-      new_table.ready(function () {
-        next_merge(i+1)
-      })
-    })
+    
   )
 */
 }
-
 
 
 
