@@ -21,11 +21,33 @@ This being a significant advantage for ad-hoc queries.
 
 This was the original idea that inspired [flumedb](https://github.com/flumedb)
 
-For ssb
+## notes
+
+This design uses simple binary search on top of sorted pointer arrays indexes.
+(aka, normalized-indexes) and then merges those, a la LSM trees.
+So far I'm just using a simple binary search, and to merge,
+using a slightly clever approach that merges really fast if there
+are runs in the merge. If we are merging A and B, say we take ~N
+from A and then ~M from B, this gets faster as N and M are bigger
+as they get nearer to 1 it becomes just like merging two streams.
+(except in the current implementation it doesn't degrade gracefully,
+and does a log(N) lookup for each item - so that merging two
+random streams is O(N*log(N)) which is worse than O(N). I'm think
+of ways to improve this so that it handles both cases gracefully,
+but the simplest right now is to avoid using this module for indexes
+on unformly random values.
 
 ## License
 
 MIT
+
+
+
+
+
+
+
+
 
 
 
