@@ -25,8 +25,9 @@ module.exports = function (compare) {
     sort()
     if(i < 0 || i >= index.length)
       cb(new RangeError('out of bounds:'+i))
-    else
+    else {
       cb(null, index[i].value, index[i].key, i)
+    }
   }
   var self
   return self = {
@@ -48,7 +49,7 @@ module.exports = function (compare) {
     search: function (target, cb) {
       sort()
       //we need to know the maximum value
-      search(get, target, compare, 0, index.length-1, function (err, idx, value) {
+      search(get, target, compare, 0, self.length()-1, function (err, idx, value) {
         cb(err, value, idx >= 0 ? index[idx].key : null, idx, idx>=0)
       })
     },
@@ -64,5 +65,4 @@ module.exports = function (compare) {
     }
   }
 }
-
 
