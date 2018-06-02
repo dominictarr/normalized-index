@@ -27,7 +27,9 @@ module.exports = function Stream (index, opts, compare) {
     opts.keys = true
     opts.values = true
     return pull(
-      Merge(index.map(function (i) { return Stream(i, opts) }), function (a, b) {
+      Merge(index.map(function (i) {
+          return Stream(i, opts, compare)
+      }), function (a, b) {
         return compare(a, b) * (opts.reverse ? -1 : 1)
       }),
       Map(function (e) {
@@ -87,6 +89,7 @@ module.exports = function Stream (index, opts, compare) {
           u_index = Math.min(u_index, index.length() - 1)
           ready()
         })
+
       function ready () {
         if(l_index === undefined || u_index === undefined) return
         next(cb)
