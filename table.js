@@ -1,4 +1,11 @@
 'use strict'
+/*
+  sorted table, in a memory buffer.
+  this was intended for testing and to get the code right,
+  not actual use. See file-table instead.
+
+*/
+
 var search = require('binary-search-async')
 module.exports = function (table, log, compare) {
   if(!Buffer.isBuffer(table)) throw new Error('table should be a buffer')
@@ -19,14 +26,15 @@ module.exports = function (table, log, compare) {
   return {
     get: get,
     length: function () { return max + 1},
+    range: function (start, end, cb) {
+      cb(null, table.slice(4+start*4, 8+end*4))
+    },
     search: function (target, cb) {
       //we need to know the maximum value
       search(get, target, compare, 0, max, function (err, idx, value) {
-        cb(err, value, idx >= 0 ? offset(idx) : null, idx, idx >= 0)
+        cb(err, value, idx >= 0 ? offset(idx) : null, idx)
       })
     }
   }
 }
-
-
 
