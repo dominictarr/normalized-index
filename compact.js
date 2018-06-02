@@ -1,3 +1,4 @@
+'use strict'
 var fs = require('fs')
 var path = require('path')
 
@@ -6,7 +7,7 @@ var Cat = require('pull-cat')
 var WriteFile = require('pull-write-file')
 var pCont = require('pull-cont')
 
-var Index = require('./index')
+var Index = require('./memory')
 var FileTable = require('./file-table')
 var Stream = require('./stream')
 var SparseMerge = require('./sparse-merge')
@@ -23,10 +24,11 @@ module.exports = function (log, dir, compare) {
 
   var metafile = path.join(dir, '/meta.json')
   var indexes = [Index(compare)]
-  var cbs = []
+  var cbs = [], meta
 
   return {
     compact: function (_cb) {
+      var _meta
       //if already compacting,
       //wait until compaction is complete,
       //then compact again.
@@ -107,13 +109,19 @@ module.exports = function (log, dir, compare) {
       )
     },
     stream: function (opts) {
+      //TODO: I'm always fixing this thing in stream where
+      //it doesn't compare on the value property.
+      function _compare (a, b) {
+        return compare(a.value, b.value)
+      }
+
       if(indexes.length == 2)
         return pCont(function (cb) {
           indexes[1].ready(function () {
-            cb(null, Stream(indexes, opts, compare))
+            cb(null, Stream(indexes, opts, _compare))
           })
         })
-      return Stream(indexes[0], opts, compare)
+      return Stream(indexes[0], opts, _compare)
     },
     add: function (op) {
       //only add to most recent index
@@ -129,7 +137,5 @@ module.exports = function (log, dir, compare) {
     indexes: indexes
   }
 }
-
-
 
 
