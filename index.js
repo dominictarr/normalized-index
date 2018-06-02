@@ -13,6 +13,7 @@ module.exports = function (compare) {
 
   function sort () {
     if(!sorted) {
+      var start = Date.now()
       index.sort(function cmp (a, b) {
         return compare(a.value, b.value) || a.key - b.key
       })
@@ -32,6 +33,12 @@ module.exports = function (compare) {
     length: function () { return index.length },
     latest: function () { return max },
     get: get,
+    range: function (start, end, cb) {
+      var a = []
+      for(var i = start; i <= end; i++)
+        a.push(index[i].key)
+      cb(null, a)
+    },
     add: function (data) {
       if(data.sync) return
       max = data.key
@@ -57,4 +64,5 @@ module.exports = function (compare) {
     }
   }
 }
+
 
