@@ -111,6 +111,7 @@ function tests (name, index1, index2) {
         return compare(a.value, b.value)
       }),
       pull.collect(function (err, ary) {
+        if(err) throw err
         t.deepEqual(ary, data.slice().sort(compare))
         t.end()
       })
@@ -120,7 +121,7 @@ function tests (name, index1, index2) {
   tape(name+':sparse-merge', function (t) {
     var c = 0, l = 0
     pull(
-      SparseMerge(index1, index2, compare),
+      SparseMerge(index1, index2),
       pull.through(function (e) {
         c++
       }),
@@ -134,6 +135,7 @@ function tests (name, index1, index2) {
       pull.flatten(),
       pull.asyncMap(log.get),
       pull.collect(function (err, ary) {
+        if(err) throw err
         t.deepEqual(ary, data.slice().sort(compare))
         console.log(c, N/c) //number of ranges, and average range length.
         t.end()
@@ -141,6 +143,7 @@ function tests (name, index1, index2) {
     )
   })
 }
+
 
 
 
