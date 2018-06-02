@@ -1,4 +1,5 @@
 'use strict'
+
 /*
   merge two indexes, but don't read every value.
   take the next value from a, then search for that value in b.
@@ -26,8 +27,15 @@
   the whole thing. seems like too many seaches. so should solve
   that above problem. on a uniformly random ordering ranges are
   too small for this method to help much.
-*/
 
+  interesting! random values is the worst case. For non random
+  values - i.e. values with runs, this is actually really fast.
+  something that is mostly sorted (such as asserted time) will
+  be fine. so will something with only a few values, such as post.
+
+  even root is probably okay: replies are usually grouped in time.
+  I'll need to measure this.
+*/
 module.exports = function (a, b) {
   var i = 0, j = 0
   return function read (abort, cb) {
@@ -44,7 +52,9 @@ module.exports = function (a, b) {
     }
     else
       a.get(i, function (err, value) {
+        if(err) return cb(err)
         b.search(value, function (err, _, __, _j) {
+          if(err) return cb(err)
           if(_j < 0) _j = ~_j
           b.range(j, _j-1, function (err, range) {
             var tmp = b; b = a; a = tmp; j = i; i = _j
