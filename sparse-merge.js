@@ -36,7 +36,10 @@
   even root is probably okay: replies are usually grouped in time.
   I'll need to measure this.
 */
-module.exports = function (a, b) {
+
+var search = require('binary-search-async')
+
+module.exports = function (a, b, compare) {
   var i = 0, j = 0
   return function read (abort, cb) {
     if(i >= a.length()) {
@@ -53,7 +56,7 @@ module.exports = function (a, b) {
     else
       a.get(i, function (err, value) {
         if(err) return cb(err)
-        b.search(value, function (err, _, __, _j) {
+        search(b.get, value, compare, 0, b.length()-1, function (err, _j) {
           if(err) return cb(err)
           if(_j < 0) _j = ~_j
           b.range(j, _j-1, function (err, range) {
@@ -67,7 +70,4 @@ module.exports = function (a, b) {
       })
     }
 }
-
-
-
 
