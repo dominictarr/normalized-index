@@ -32,14 +32,14 @@ pull(
   log.stream({live: true}),
   pull.drain(function (data) {
     seqs.push(data)
-    if((i++) % 10)
+    if((i++) % 2)
       index1.add({key:data.seq, value: data.value})
     else
       index2.add({key:data.seq, value: data.value})
   })
 )
 
-var data = [], N = 100
+var data = [], N = 10000
 for(var i = 0; i < N; i++)
   data.push({key: Math.random(), i: i, mod: !!(i%10)})
 
@@ -119,30 +119,47 @@ function tests (name, index1, index2) {
   })
 
   tape(name+':sparse-merge', function (t) {
-    var c = 0, l = 0
+    var k = 0
+    function compare (a, b) {
+      k++
+      return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+    }
+
+    var c = 0, l = 0, start = Date.now()
     pull(
-      SparseMerge(index1, index2),
+      SparseMerge(index1, index2, compare),
       pull.through(function (e) {
         c++
       }),
-      pull.map(function (e) {
-        if(Array.isArray(e)) return e
-        var ary = new Array(e.length/4)
-        for(var i = 0; i < e.length/4; i++)
-          ary[i] = e.readUInt32BE(i*4)
-        return ary
-      }),
-      pull.flatten(),
-      pull.asyncMap(log.get),
       pull.collect(function (err, ary) {
         if(err) throw err
-        t.deepEqual(ary, data.slice().sort(compare))
-        console.log(c, N/c) //number of ranges, and average range length.
-        t.end()
+        //if it's non overlapping, k will be really small
+        //if it's uniform, really big. (until fix by using seek)
+      console.log('sparse-merge', Date.now()-start, k, index1.length(), index2.length(), c)
+//        console.log(k, c, N/c) //number of ranges, and average range length.
+
+        pull(
+          pull.values(ary),
+          pull.map(function (e) {
+            if(Array.isArray(e)) return e
+            var ary = new Array(e.length/4)
+            for(var i = 0; i < e.length/4; i++)
+              ary[i] = e.readUInt32BE(i*4)
+            return ary
+          }),
+          pull.flatten(),
+          pull.asyncMap(log.get),
+          pull.collect(function (err, ary) {
+            t.deepEqual(ary, data.slice().sort(compare))
+            t.end()
+          })
+        )
       })
     )
   })
 }
+
+
 
 
 
