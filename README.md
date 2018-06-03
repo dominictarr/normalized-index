@@ -30,24 +30,42 @@ using a slightly clever approach that merges really fast if there
 are runs in the merge. If we are merging A and B, say we take ~N
 from A and then ~M from B, this gets faster as N and M are bigger
 as they get nearer to 1 it becomes just like merging two streams.
-(except in the current implementation it doesn't degrade gracefully,
-and does a log(N) lookup for each item - so that merging two
-random streams is O(N*log(N)) which is worse than O(N). I'm think
-of ways to improve this so that it handles both cases gracefully,
-but the simplest right now is to avoid using this module for indexes
-on unformly random values.
+
+To improve this, I realized that you do not need to do a whole
+binary search each time. In fact, if you have arrived at a current
+result from a binary search then it _implies_ that certain other
+records have already been looked at, since the indexes examined
+in a binary search are deterministic. Theifore, to search for
+the next value, we can rewind the binary search to the place
+that it would have diverted - if the next value we are seeking
+is only slightly greater than the current, the same path would be
+followed, until somewhere near the end. So, rewind and continue
+searching from that state. Also, since we read them recently,
+these values will already be in the cache! so reading them will be
+very fast.
+
+This improves read efficiency significantly! In an experiment
+where the first record in an index is read, then records at
+varying distances, the number of reads used is graphed, depending
+on wether another full binary search is used, or reversing the search
+then searching, or just iterating over the dataset.
+
+![seek-vs-search-vs-iterate](./chart.png)
+
+The bottom axis is the average distance we want to jump ahead.
+Iteration always costs the same because it just reads everything,
+giving us a lower bound. Seek and Search are both worse than
+simple iteration at low numbers, but Seek becomes better if the
+average distance jumped is 5, but but search doesn't become better
+than iteration until the average is 15!
+
+Seeking is definitely effective, but it's also necessary to switch
+to iteration if the average distance jumped is too low.
+Probably a rule of thumb is sufficient in practice, because
+the real world performance is probably related to application
+factors.
 
 ## License
 
 MIT
-
-
-
-
-
-
-
-
-
-
 
