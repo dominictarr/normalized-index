@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "aligned-block-file": "^1.1.2",
-    "binary-search-async": "^1.0.0",
+    "binary-search-async": "^1.1.0",
     "pull-cat": "^1.1.11",
     "pull-cont": "^0.1.1",
     "pull-group": "^1.0.0",
