@@ -1,6 +1,6 @@
 # normalized-index
 
-an database index for flumedb that only stores sequence/offset.
+An database index for flumedb that only stores sequence/offset.
 It's a [Log Structured Merge-tree](https://en.wikipedia.org/wiki/Log-structured_merge-tree)
 except it doesn't store keys, only pointers to the values which
 are stored in the main flumelog.
@@ -52,6 +52,8 @@ then searching, or just iterating over the dataset.
 
 ![seek-vs-search-vs-iterate](./chart.png)
 
+(note to self: the script to generate this data is in `binary-search-async/test/seek.js`)
+
 The bottom axis is the average distance we want to jump ahead.
 Iteration always costs the same because it just reads everything,
 giving us a lower bound. Seek and Search are both worse than
@@ -64,6 +66,11 @@ to iteration if the average distance jumped is too low.
 Probably a rule of thumb is sufficient in practice, because
 the real world performance is probably related to application
 factors.
+
+Also note: the worst case is merging two _equal sized_ uniformly random data sets.
+(hmm, or data with the same keys, so that each run was only 1 item long)
+However, if one data set is much larger than the other, then you get good runs again!
+So this should fit with log structured merge trees pretty well.
 
 ## License
 
