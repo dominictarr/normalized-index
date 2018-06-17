@@ -39,7 +39,7 @@ pull(
   })
 )
 
-var data = [], N = 10000
+var data = [], N = 1000
 for(var i = 0; i < N; i++)
   data.push({key: Math.random(), i: i, mod: !!(i%10)})
 
@@ -158,10 +158,5 @@ function tests (name, index1, index2) {
     )
   })
 }
-
-
-
-
-
 
 
