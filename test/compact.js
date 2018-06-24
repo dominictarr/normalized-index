@@ -33,14 +33,13 @@ function cmp (a, b) {
 }
 
 function compare (a, b) {
-  return cmp(a.foo, b.foo) || cmp(a.bar, b.bar)
+  return cmp(a.foo, b.foo) || cmp(a.bar, b.bar) || cmp(a.r, b.r)
 }
 
 function compare2 (a,b) {
   return cmp(a.r, b.r) || compare(a, b)
 }
 
-//var c = Compact(log, index_dir, compare, decode)
 var c2 = Compact(log, index_dir2, compare2)
 
 pull(
@@ -56,7 +55,7 @@ function next () {
     c2.compact(function (err) {
       if(err) throw err
       setTimeout(function () {
-        pull(c2.stream({keys: true, live: false}), pull.collect(function (err, ary) {
+        pull(c2.stream({keys: false, live: false}), pull.collect(function (err, ary) {
           if(err) throw err
           console.log(ary)
           console.log(a)
@@ -71,4 +70,5 @@ function next () {
     })
   })
 }
+
 

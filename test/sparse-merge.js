@@ -9,7 +9,7 @@ var Index = require('../memory')
 var Table = require('../table')
 var FileTable = require('../file-table')
 var Stream = require('../stream')
-var SparseMerge = require('../sparse-merge')
+var SparseMerge = require('../sparse')
 
 var mkdirp = require('mkdirp')
 
@@ -46,20 +46,20 @@ for(var i = 0; i < N; i++)
 log.append(data, function (err) {
   if(err) throw err
 
-  function group (name, index1, index2) {
+  function group (name, index1, index2, Merge) {
     name = name ? name +':' : ''
-    tests(name+'mem1', index1, index2)
-    tests(name+'mem2', index2, index1)
+    tests(name+'mem1', index1, index2, Merge)
+    tests(name+'mem2', index2, index1, Merge)
     var buffer1 = index1.serialize()
     var buffer2 = index2.serialize()
     var table1 = Table(buffer1, log, compare)
     var table2 = Table(buffer2, log, compare)
-    tests(name+'table1', table1, table2)
-    tests(name+'table2', index2, index1)
-    tests(name+'table1,mem2', table1, index2)
-    tests(name+'mem2,table1', index2, table1)
-    tests(name+'table2,mem1', table2, index1)
-    tests(name+'mem1,table2', index1, table2)
+    tests(name+'table1', table1, table2, Merge)
+    tests(name+'table2', index2, index1, Merge)
+    tests(name+'table1,mem2', table1, index2, Merge)
+    tests(name+'mem2,table1', index2, table1, Merge)
+    tests(name+'table2,mem1', table2, index1, Merge)
+    tests(name+'mem1,table2', index1, table2, Merge)
 
     var file = '/tmp/test-sparse-merge'+(name?'.'+name.replace(':','.'):'')
     try {
@@ -72,16 +72,18 @@ log.append(data, function (err) {
     var file1 = FileTable(file+1, log, compare)
     var file2 = FileTable(file+2, log, compare)
 
-    tests('file1', file1, file2)
-    tests('file2', file2, file1)
-    tests('file1,mem2', file1, table2)
-    tests('file1,table2', file1, table2)
-    tests('file1,mem2', file1, index2)
-    tests('mem2,file1', index2, file1)
-    tests('file2,mem1', file2, index1)
-    tests('mem1,file2', index1, file2)
+    tests(name+'file1', file1, file2, Merge)
+    tests(name+'file2', file2, file1, Merge)
+    tests(name+'file1,mem2', file1, table2, Merge)
+    tests(name+'file1,table2', file1, table2, Merge)
+    tests(name+'file1,mem2', file1, index2, Merge)
+    tests(name+'mem2,file1', index2, file1, Merge)
+    tests(name+'file2,mem1', file2, index1, Merge)
+    tests(name+'mem1,file2', index1, file2, Merge)
   }
-  group('', index1,index2)
+
+  group('overlapping(searching)', index1,index2, require('../sparse-merge'))
+  group('overlapping(seeking)', index1,index2, require('../sparse'))
 
   var sorted = seqs.slice().sort(function (a, b) {
     return compare(a.value, b.value)
@@ -100,10 +102,11 @@ log.append(data, function (err) {
     if(!~b.find(function (f) { return f.value.i == e.value.i })) throw new Error('same item:'+i)
   })
 
-  group('non-overlapping', index3,index4)
+  group('non-overlapping(searching)', index3,index4, require('../sparse-merge'))
+  group('non-overlapping(seeking)', index3,index4, require('../sparse'))
 })
 
-function tests (name, index1, index2) {
+function tests (name, index1, index2, SparseMerge) {
 
   tape(name+':order', function (t)  {
     pull(
@@ -158,5 +161,9 @@ function tests (name, index1, index2) {
     )
   })
 }
+
+
+
+
 
 

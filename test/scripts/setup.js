@@ -6,7 +6,7 @@ var Flume = require('flumedb')
 var FlumeLog = require('flumelog-offset')
 var FlumeViewLevel = require('flumeview-level')
 var json = require('flumecodec/json')
-var Index = require('../../')
+var Index = require('../../memory')
 var IndexTable = require('../../table')
 
 var mkdirp = require('mkdirp')
