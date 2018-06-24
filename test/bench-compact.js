@@ -34,39 +34,42 @@ var random = new Buffer(1024).toString('base64')
 
 var very_start = Date.now()
 
+/*
+*****
+create a database with M random records, writing in batches of N,
+and then create an index for the key field (which is uniformly random)
+
+after every batch, run the compactor.
+*/
+
+var N = 10000, M = 100000
+
 ;(function next (j) {
-  var data = [], N = 10000
-  if(j*N>1000000) return console.log('done!') 
+  var range_start = j*N, range_end = (j+1)*N
+  var range_string = '('+range_start+','+range_end+')'
+  var data = []
+  if(j*N>M) return console.error('total_time()', Date.now() - very_start) 
   for(var i = 0; i < N; i++)
     data.push({key: Math.random(), i: i, stage: 1, mod: !!(i%10), text: random})
   var start = Date.now()
   log.append(data, function () {
-    console.log('write', Date.now() - start)
+    //time to perform the last
+    console.log('log-write-time'+range_string, Date.now() - start)
     start = Date.now()
-  /*  if(compactor.indexes.length > 1)
-      pull(
-        SparseMerge(compactor.indexes[0], compactor.indexes[1]),
-//        Stream(compactor.indexes[0]),
-        pull.drain(null, function () {
-          console.log('--merge', Date.now() - start)
-          next2()
-        })
-      )
-    else*/
-      next2()
-
-    function next2 () {
-      compactor.compact(function (err, status) {
-        if(err) throw err
-        console.log('compact', Date.now() - start, status)
-        var seconds = (Date.now() - very_start)/1000
-        var mb = (status.since/(1024*1024))
-        console.log('mb/second', mb / seconds, mb, seconds)
-        console.log(process.memoryUsage().heapUsed/(1024*1024))
-        next(j+1)
-      })
-    }
+    compactor.compact(function (err, status) {
+      if(err) throw err
+      console.log('compaction-time'+range_string, Date.now() - start, status)
+      var seconds = (Date.now() - very_start)/1000
+      var mb = (status.since/(1024*1024))
+      console.log('mb/second', mb / seconds, mb, seconds)
+      console.log('memory', process.memoryUsage().heapUsed/(1024*1024))
+      next(j+1)
+    })
   })
 })(0)
+
+
+
+
 
 
