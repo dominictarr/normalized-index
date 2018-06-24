@@ -35,7 +35,9 @@ module.exports = function (a, b, compare) {
           b_value = value
           if(b_i > b.length()-1) b_ended = true
           swap()
-          cb(null, range)
+          setImmediate(function () {
+            cb(null, range)
+          })
         })
       })
   }
