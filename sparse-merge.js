@@ -40,6 +40,7 @@
 var search = require('binary-search-async')
 
 module.exports = function (a, b, compare) {
+  if(!compare) throw new Error('sparse-merge: compare(a,b) must be provided')
   var i = 0, j = 0
   return function read (abort, cb) {
     if(i >= a.length()) {
@@ -56,11 +57,11 @@ module.exports = function (a, b, compare) {
     else
       a.get(i, function (err, value) {
         if(err) return cb(err)
-        search(b.get, value, compare, 0, b.length()-1, function (err, _j) {
+        search(b.get, value, compare, 0, b.length()-1, function (err, search_j, _value) {
           if(err) return cb(err)
-          if(_j < 0) _j = ~_j
-          b.range(j, _j-1, function (err, range) {
-            var tmp = b; b = a; a = tmp; j = i; i = _j
+          if(search_j < 0) search_j = ~search_j
+          b.range(j, search_j-1, function (err, range) {
+            var tmp = b; b = a; a = tmp; j = i; i = search_j
             setImmediate(function () {
               if(range.length) cb(err, range)
               else read(null, cb)
