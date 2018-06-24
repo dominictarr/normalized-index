@@ -67,7 +67,7 @@ module.exports = function (log, dir, compare) {
           //as the first value.
           pull.values([[latest]]),
           compacting.length == 2
-          ? SparseMerge(compacting[0], compacting[1])
+          ? SparseMerge(compacting[0], compacting[1], compare)
           : pCont(function (cb) {
               compacting[0].range(0, compacting[0].length()-1, function (err, range) {
                 cb(null, pull.values([range]))
