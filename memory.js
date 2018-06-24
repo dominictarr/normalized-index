@@ -36,8 +36,10 @@ module.exports = function (compare) {
     get: get,
     range: function (start, end, cb) {
       var a = []
-      for(var i = start; i <= end; i++)
+      for(var i = start; i <= end; i++) {
+        if(i >= index.length) throw new Error('index greater than index.length:'+i)
         a.push(index[i].key)
+      }
       cb(null, a)
     },
     add: function (data) {
@@ -65,4 +67,5 @@ module.exports = function (compare) {
     }
   }
 }
+
 
