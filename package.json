@@ -10,6 +10,7 @@
   "dependencies": {
     "aligned-block-file": "^1.1.2",
     "binary-search-async": "^1.1.0",
+    "obv": "0.0.1",
     "pull-cat": "^1.1.11",
     "pull-cont": "^0.1.1",
     "pull-group": "^1.0.0",
@@ -19,7 +20,7 @@
   },
   "devDependencies": {
     "flumecodec": "0.0.1",
-    "flumedb": "^0.4.6",
+    "flumedb": "^0.4.8",
     "flumelog-offset": "^3.3.0",
     "flumeview-level": "^3.0.5",
     "hashlru": "^2.2.1",
