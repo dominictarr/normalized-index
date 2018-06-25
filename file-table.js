@@ -28,6 +28,7 @@ module.exports = function (file, log, compare, cb) {
 
   var self
   return self = {
+    filename: file,
     get: get,
     ready: function (cb) {
       blocks.offset.once(function () { cb() })
