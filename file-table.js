@@ -1,7 +1,6 @@
 'use strict'
 var search = require('binary-search-async')
 var Blocks = require('aligned-block-file')
-
 /*
   sorted index stored in a binary file.
   the main database should be a series of these.
@@ -9,7 +8,7 @@ var Blocks = require('aligned-block-file')
 
 module.exports = function (file, log, compare, cb) {
   var blocks = Blocks(file, 1024)
-  var max = 0
+  var max = 0, latest
 
   function offset(index, cb) {
     if(isNaN(index)) throw new Error('index was NaN')
@@ -31,10 +30,18 @@ module.exports = function (file, log, compare, cb) {
     filename: file,
     get: get,
     ready: function (cb) {
-      blocks.offset.once(function () { cb() })
+      blocks.offset.once(function () {
+        blocks.readUInt32BE(0, function (_, _latest) {
+          latest = _latest
+          cb()
+        })
+      })
     },
     length: function () {
       return (blocks.size()-4)/4
+    },
+    latest: function () {
+      return latest
     },
     range: function (start, end, cb) {
       if(start > end) return cb(null, [])
