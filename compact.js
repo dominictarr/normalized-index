@@ -18,11 +18,10 @@ var cont = require('cont')
 
 //generate an index following a log.
 
-// a simple index with two stages.
-// one is immutable, and read from disk
-// the other is in memory.
-
-// when compact(cb) is called, these two indexes are combined into one.
+//needs improved compaction: needs a logarithimic compaction.
+//maybe when hits a threashold, write to a file-table
+//and a background process combines the oldest two equal sized
+//tables.
 
 //copy of the compaction strategy that just writes out files
 //when they pass threashold. ends up with lots of small files.
