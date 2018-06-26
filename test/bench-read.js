@@ -23,7 +23,7 @@ module.exports = function (dir) {
 
   var meta = JSON.parse(fs.readFileSync(path.join(dir, 'meta.json')))
   console.log(meta)
-  var ft = FileTable(path.join(dir, meta.index), log, compare)
+  var ft = FileTable(path.join(dir, meta.index[0]), log, compare)
 
   var N = 1
   var i = N, a = []
