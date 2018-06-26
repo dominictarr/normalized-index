@@ -3,8 +3,15 @@ var search = require('binary-search-async')
 var pull = require('pull-stream')
 
 //this is an in-memory index, must be rebuilt from the log.
-global.SORTS = 0
+
+//leveldb uses a skiplist for this. but to get things working
+//i just used an array + sorting it when adding something.
+//much faster than binary search and then insert (since splice is slow)
+//and a skip list is hard to implement (like linked list but worse!)
+
+global.SORT_COUNT = 0
 global.SORT_TIME = 0
+global.SORT_MAX = 0
 module.exports = function (compare) {
   if('function' !== typeof compare)
     throw new Error('compare is not function')
@@ -19,8 +26,11 @@ module.exports = function (compare) {
       index.sort(function cmp (a, b) {
         return compare(a.value, b.value) || a.key - b.key
       })
-      global.SORTS += 1
-      console.log('sort time:', global.SORT_TIME+=Date.now()-start)
+      var time = Date.now()-start
+      global.SORT_COUNT += 1
+      global.SORT_TIME+=time
+      global.SORT_MAX = Math.max(global.SORT_MAX, time)
+      console.log('sort time:', time, global.SORT_TIME, global.SORT_MAX)
       sorted = true
     }
   }
@@ -74,5 +84,6 @@ module.exports = function (compare) {
 }
 
 process.on('exit', function () {
-  console.log("normalized-index:sorts", SORTS, SORT_TIME)
+  console.log("normalized-index:sorts", SORT_COUNT, SORT_TIME, SORT_MAX)
 })
+
