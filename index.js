@@ -3,7 +3,7 @@ var CompareAt = require('compare-at')
 var Compactor = require('./compact')
 var path = require('path')
 var Take = require('pull-stream/throughs/take')
-var K = 50*1000
+var K = 65536/2
 
 module.exports = function FlumeViewNormalizedIndex (version, index) {
 
@@ -21,19 +21,20 @@ module.exports = function FlumeViewNormalizedIndex (version, index) {
     compactor.createSink = function (cb) {
       return function (read) {
         read(null, function again (err, data) {
+          if(err) return cb(err === true ? null : err)
           if(has(data.value)) {
               compactor.add({key:data.seq, value:data.value})
             //simple strategy for managing write flow:
             //when we hit a threashold, wait until we have compacted.
-            if(compactor.indexes[0].length() < K)
+            if(compactor.indexes()[0].length() < K)
               read(null, again)
             else {
-              console.log(name+':compacting', compactor.indexes.map(function (e) { return e.length() }))
-              var start = Date.now(), c = compactor.indexes.reduce(function (a, b) {
+              console.log(name+':compacting', compactor.indexes().map(function (e) { return e.length() }))
+              var start = Date.now(), c = compactor.indexes().reduce(function (a, b) {
                 return a + b.length() || 0
               }, 0)
               compactor.compact(function (err, status) {
-                console.log(name+':compacted!', Date.now() - start, c, status)
+                console.log(name+':compacted!', Date.now() - start, c)
                 read(null, again)
               })
             }
@@ -57,11 +58,10 @@ module.exports = function FlumeViewNormalizedIndex (version, index) {
     compactor.methods = {
       compact: 'async',
       status: 'sync',
-      read: 'source'
+      read: 'source',
+      indexes: 'sync'
     }
     return compactor
   }
 }
-
-
 
