@@ -54,10 +54,7 @@ var j = 0
   for(var i = 0; i<N;i ++) {
     var value = {hash: hash(i+(j*N)), time:Date.now(), i: i, j:j}
     a.push(value)
-//    b.push({key: value.hash, value: value, type: 'put'})
   }
-//  db.batch(b, function (err) {
-//    if(err) throw err
     log.append(a, function () {
       next(j + 1)
     })
@@ -68,4 +65,6 @@ function next2 () {
   console.log('loaded')
   fs.writeFileSync(path.join(dir, 'table'), index.serialize())
 }
+
+
 
