@@ -14,6 +14,7 @@ var SparseMerge = require('./sparse')
 var Group = require('pull-group')
 var Obv = require('obv')
 var mkdirp = require('mkdirp')
+var cont = require('cont')
 
 //generate an index following a log.
 
@@ -23,12 +24,58 @@ var mkdirp = require('mkdirp')
 
 // when compact(cb) is called, these two indexes are combined into one.
 
-global.TS = Date.now()
-global.C = 0
-
+//copy of the compaction strategy that just writes out files
+//when they pass threashold. ends up with lots of small files.
 function compact (log, dir, compare, indexes, cb) {
+  if(!indexes) throw new Error('indexes must be provided')
+  var latest = indexes[0].latest()
+  var filename = path.join(dir, ''+latest+'.idx')
+  var c = 0, t = 0
+  pull(
+    Cat([
+      //save the `latest` because the file format keeps the length
+      //as the first value.
+      pull.values([[latest]]),
+      pCont(function (cb) {
+        indexes[0].range(0, indexes[0].length()-1, function (err, range) {
+          cb(null, pull.values([range]))
+        })
+      })
+    ]),
+    //TODO: rewrite without buffering.
+    pull.map(function (ary) {
+      c ++; t += Buffer.isBuffer(ary) ? ary.length/4 : ary.length 
+      if(Buffer.isBuffer(ary)) return ary
+      var buf = new Buffer(ary.length*4)
+      for(var i = 0; i < ary.length; i++)
+        buf.writeUInt32BE(ary[i], i*4)
+      return buf
+    }),
+    Group(1024*16),
+    pull.map(function (ary) {
+      return Buffer.concat(ary)
+    }),
+    WriteFile(filename, function (err) {
+      if(err) return cb(err)
+      //write metafile to temp location, then move it into place,
+      //so that compaction is atomic.
+      indexes[0] =
+        FileTable(path.join(dir, latest +'.idx'), log, compare)
+
+      cb(null, indexes, {
+        count: c, total: t,
+        average: t/c, since: latest
+      })
+    })
+  )
+}
+
+//compaction strategy that holds two files, and compacts
+//the new one into the big one. too slow, because recompacts
+//too much.
+
+function compact2 (log, dir, compare, indexes, cb) {
   var compacting = indexes.slice(0, 2)
-  indexes.unshift(Index(compare))
   var latest = compacting[0].latest()
   var filename = path.join(dir, ''+latest+'.idx')
   var c = 0, t = 0
@@ -80,6 +127,7 @@ function compact (log, dir, compare, indexes, cb) {
   )
 }
 
+
 module.exports = function (log, dir, compare) {
   var metafile = path.join(dir, '/meta.json')
   var indexes = [Index(compare)]
@@ -113,11 +161,6 @@ module.exports = function (log, dir, compare) {
     since: since,
     compact: function (_cb) {
       var _meta
-      //if already compacting,
-      //wait until compaction is complete,
-      //then compact again.
-
-      //to compact, create a new index,
 
       if(cbs.length) {
         //if a compaction is underway,
@@ -140,18 +183,20 @@ module.exports = function (log, dir, compare) {
         while(_cbs.length) _cbs.shift()(err, meta)
       }
 
-      compact(log, dir, compare, indexes, function (err, _indexes, status) {
+      var latest = indexes[0].latest()
+      indexes.unshift(Index(compare))
+      compact(log, dir, compare, indexes.slice(1), function (err, _indexes, status) {
         if(err) return cb(err)
         fs.writeFile(metafile+'~', JSON.stringify(_meta = {
-          since: indexes[0].latest(), index: _indexes.map(function (e) {
-            return e.filename
+          since: latest, index: _indexes.map(function (e) {
+            return path.basename(e.filename)
           }).filter(Boolean)
         }), function (err) {
           if(err) return cb(err)
           fs.rename(metafile+'~', metafile, function (err) {
             if(err) return cb(err)
-            indexes = _indexes
-            status.meta = meta
+            indexes = [indexes[0]].concat(_indexes)
+            status.meta = meta = _meta
             cb(err, status)
           })
         })
@@ -169,10 +214,15 @@ module.exports = function (log, dir, compare) {
       if(opts && opts.index != null)
         return Stream(indexes[opts.index], opts, _compare)
 
-      if(indexes.length == 2)
+      if(indexes.length > 1)
         return pCont(function (cb) {
-          indexes[1].ready(function () {
-            cb(null, Stream(indexes[0].length() ? indexes : indexes[1], opts, _compare))
+          cont.para(indexes.map(function (index) {
+            return function (cb) {
+              if(!index.ready) cb()
+              else index.ready(cb)
+            }
+          })) (function () {
+            cb(null, Stream(indexes, opts, compare))
           })
         })
       return Stream(indexes[0], opts, _compare)
@@ -180,11 +230,6 @@ module.exports = function (log, dir, compare) {
     add: function (op) {
       //only add to most recent index
       C++
-      if(Date.now() > TS+1000) {
-        TS = Date.now()
-        console.log('UPDATE', op.key, C)
-        C = 0
-      }
 
       indexes[0].add(op)
       since.set(op.key)
