@@ -3,6 +3,8 @@ var search = require('binary-search-async')
 var pull = require('pull-stream')
 
 //this is an in-memory index, must be rebuilt from the log.
+global.SORTS = 0
+global.SORT_TIME = 0
 module.exports = function (compare) {
   if('function' !== typeof compare)
     throw new Error('compare is not function')
@@ -17,6 +19,8 @@ module.exports = function (compare) {
       index.sort(function cmp (a, b) {
         return compare(a.value, b.value) || a.key - b.key
       })
+      global.SORTS += 1
+      console.log('sort time:', global.SORT_TIME+=Date.now()-start)
       sorted = true
     }
   }
@@ -35,6 +39,7 @@ module.exports = function (compare) {
     latest: function () { return max },
     get: get,
     range: function (start, end, cb) {
+      sort()
       var a = []
       for(var i = start; i <= end; i++) {
         if(i >= index.length) throw new Error('index greater than index.length:'+i)
@@ -68,4 +73,6 @@ module.exports = function (compare) {
   }
 }
 
-
+process.on('exit', function () {
+  console.log("normalized-index:sorts", SORTS, SORT_TIME)
+})
