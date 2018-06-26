@@ -1,6 +1,6 @@
 'use strict'
 var tape = require('tape')
-var NormalizedIndex = require('./')
+var NormalizedIndex = require('../')
 var pull = require('pull-stream')
 var path = require('path')
 var Flume = require('flumedb')
