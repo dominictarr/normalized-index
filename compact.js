@@ -228,8 +228,6 @@ module.exports = function (log, dir, compare) {
     },
     add: function (op) {
       //only add to most recent index
-      C++
-
       indexes[0].add(op)
       since.set(op.key)
     },
@@ -249,4 +247,5 @@ module.exports = function (log, dir, compare) {
     indexes: function () { return indexes }
   }
 }
+
 
