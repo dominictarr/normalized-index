@@ -18,12 +18,12 @@ function hash (s) {
 }
 
 var dir = path.join(process.env.HOME, '.ssb/flume')
-console.log(dir)
+
 var string_codec = {
   decode: function (b) { return b.toString('ascii') }
 }
 
-var log = FlumeLog(path.join(dir, 'log.offset'), {codec: json})
+var log = FlumeLog(path.join(dir, 'log.offset'), {blockSize: 64*1024, codec: json})
 var db = Flume(log)
 
 var indexes = [
@@ -43,11 +43,11 @@ indexes.forEach(function (opts) {
 
 var compare = CompareAt([['value','content','type'], ['value','timestamp']])
 
-var disorder = 0, limit = 1000
+var disorder = 0, limit = 100
 ;(function more (ts) {
   var start = Date.now(), min = ts, c = 0, last = null
   var orders = {'-1': 0, '0': 0, '1': 0}
-
+  disorder = 0
   pull(
     db.ni_tya.read({
       gt: {
@@ -89,4 +89,6 @@ var disorder = 0, limit = 1000
     })
   )
 })(0)
+
+
 
