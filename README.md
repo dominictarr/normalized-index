@@ -72,7 +72,28 @@ Also note: the worst case is merging two _equal sized_ uniformly random data set
 However, if one data set is much larger than the other, then you get good runs again!
 So this should fit with log structured merge trees pretty well.
 
+## TODO
+
+This is pretty fast already, but the memory table, which
+uses array+sort isn't suitable for production. next thing is
+to integrate [skiplist-buffer](https://github.com/dominictarr/skiplist-buffer)
+which is fast enough. Also, test this with
+[binary-format](https://github.com/dominictarr/binary) to see how
+much difference that makes. binary in-place makes scans really fast,
+so can probably use that to lazily build indexes. Rebuild the
+indexes when they are used in queries - if scans are fast,
+and the query is fast, then updating the index will probably
+only a few seconds, and the next query will be fast.
+In a new app, the initial queries will be a bit slow, but after
+the first use they will be really fast. If you stop using an app,
+(and thus stop using it's queries) the system doesn't update
+those indexes anymore.
+
 ## License
 
 MIT
+
+
+
+
 
