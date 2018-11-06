@@ -1,3 +1,4 @@
+'use strict'
 var FlumeLog = require('flumelog-offset')
 var pull = require('pull-stream')
 var tape = require('tape')
@@ -37,6 +38,7 @@ function compare (a, b) {
 }
 
 function compare2 (a,b) {
+  console.log(a, b)
   return cmp(a.r, b.r) || compare(a, b)
 }
 
@@ -55,13 +57,14 @@ function next () {
     c2.compact(function (err) {
       if(err) throw err
       setTimeout(function () {
-        pull(c2.stream({keys: false, live: false}), pull.collect(function (err, ary) {
-          if(err) throw err
-          console.log(ary)
-          console.log(a)
-          t.deepEqual(ary, a)
-          t.end()
-        }))
+        pull(
+          c2.stream({keys: false, live: false}),
+          pull.collect(function (err, ary) {
+            if(err) throw err
+            t.deepEqual(ary, a.slice().sort(compare2))
+            t.end()
+          })
+        )
       })
     })
 
@@ -70,5 +73,6 @@ function next () {
     })
   })
 }
+
 
 
