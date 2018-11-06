@@ -25,8 +25,12 @@ var cont = require('cont')
 
 //copy of the compaction strategy that just writes out files
 //when they pass threashold. ends up with lots of small files.
+
 function compact (log, dir, compare, indexes, cb) {
-  if(!indexes) throw new Error('indexes must be provided')
+  if(!indexes) {
+    console.log("COMPACT", log, dir, compare, indexes)
+    throw new Error('indexes must be provided')
+  }
   var latest = indexes[0].latest()
   var filename = path.join(dir, ''+latest+'.idx')
   var c = 0, t = 0
@@ -115,7 +119,7 @@ function compact2 (log, dir, compare, indexes, cb) {
         FileTable(
           path.join(dir, compacting[0].latest() +'.idx'),
           log,
-          compact
+          compare
         )
       )
       cb(null, _indexes.filter(Boolean), {
@@ -184,7 +188,7 @@ module.exports = function (log, dir, compare) {
 
       var latest = indexes[0].latest()
       indexes.unshift(Index(compare))
-      compact(log, dir, compare, indexes.slice(1), function (err, _indexes, status) {
+      compact2(log, dir, compare, indexes.slice(1), function (err, _indexes, status) {
         if(err) return cb(err)
         fs.writeFile(metafile+'~', JSON.stringify(_meta = {
           since: latest, index: _indexes.map(function (e) {
@@ -247,5 +251,7 @@ module.exports = function (log, dir, compare) {
     indexes: function () { return indexes }
   }
 }
+
+
 
 
