@@ -221,7 +221,7 @@ module.exports = function (log, dir, compare) {
               else index.ready(cb)
             }
           })) (function () {
-            cb(null, Stream(indexes, opts, compare))
+            cb(null, Stream(indexes, opts, _compare))
           })
         })
       return Stream(indexes[0], opts, _compare)
