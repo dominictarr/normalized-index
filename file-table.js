@@ -1,6 +1,7 @@
 'use strict'
 var search = require('binary-search-async')
 var Blocks = require('aligned-block-file')
+var seek = require('binary-search-async/seek')
 /*
   sorted index stored in a binary file.
   the main database should be a series of these.
@@ -15,14 +16,30 @@ module.exports = function (file, log, compare, cb) {
     blocks.readUInt32BE(4+index*4, cb)
   }
 
+  var cache = require('hashlru')(1024)
+
   function get (i, cb) {
-    offset(i, function (err, key) {
-      if(err) return cb(err)
-      log.get(key, function (err, value) {
+    var data = cache.get(i)
+    if(data) {
+      if(Array.isArray(data))
+        data.push(cb)
+      else {
+        cb(null, data.value, data.key)
+      }
+    }
+    else {
+      var waiting = [cb]
+      cache.set(i, waiting)
+      offset(i, function (err, key) {
         if(err) return cb(err)
-        cb(null, value, key)
+        log.get(key, function (err, value) {
+          if(err) return cb(err)
+
+          cache.set(i, {value:value, key: key})
+          while(waiting.length) waiting.shift()(null, value, key)
+        })
       })
-    })
+    }
   }
 
   var self
@@ -46,6 +63,12 @@ module.exports = function (file, log, compare, cb) {
     range: function (start, end, cb) {
       if(start > end) return cb(null, [])
       blocks.read(4+start*4, 4+end*4+4, cb)
+    },
+    seek: function (target, start, cb) {
+      start = start | 0
+      blocks.offset.once(function (off) {
+        seek(self.get, target, compare, start, 0, self.length()-1, cb)
+      })
     },
     search: function (target, cb) {
       //we need to know the maximum value
