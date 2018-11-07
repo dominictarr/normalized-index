@@ -2,7 +2,7 @@
 var fs = require('fs')
 var tape = require('tape')
 var pull = require('pull-stream')
-
+var leftpad = require('left-pad')
 var FlumeLog = require('flumelog-offset')
 var json = require('flumecodec/json')
 var path = require('path')
@@ -42,7 +42,7 @@ and then create an index for the key field (which is uniformly random)
 after every batch, run the compactor.
 */
 
-var N = 10000, M = 100000
+var N = 10000, M = 500000
 
 ;(function next (j) {
   var range_start = j*N, range_end = (j+1)*N
@@ -50,7 +50,17 @@ var N = 10000, M = 100000
   var data = []
   if(j*N>M) return console.error('total_time()', Date.now() - very_start) 
   for(var i = 0; i < N; i++)
-    data.push({key: Math.random(), i: i, stage: 1, mod: !!(i%10), text: random})
+    data.push({
+      //key: 'K'+i,
+//      key: 'K'+leftpad(i, 10, '0'), //Date.now(),
+//      key: 'J'+(~(Math.random()*10))+ '='+leftpad(i*j, 10, '0'),
+      //key: 'J'+(~(Math.random()*10)),//+ '='+leftpad(i*j, 10, '0'),
+//      key: 'J'+(~(Math.random()*10))+"_"+Date.now() + '='+i,
+//      key: (~(Math.random()*100))+"_"+leftpad(i, 8), //Date.now(),
+      key: (~(Math.random()*10000000))+"_"+Date.now(),
+      i: i, j: j, stage: 1, mod: !!(i%10),
+      text: random
+    })
   var start = Date.now()
   log.append(data, function () {
     //time to perform the last
@@ -67,9 +77,4 @@ var N = 10000, M = 100000
     })
   })
 })(0)
-
-
-
-
-
 
