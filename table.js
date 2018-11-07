@@ -7,6 +7,8 @@
 */
 
 var search = require('binary-search-async')
+var seek = require('binary-search-async/seek')
+
 module.exports = function (table, log, compare) {
   if(!Buffer.isBuffer(table)) throw new Error('table should be a buffer')
 
@@ -29,6 +31,9 @@ module.exports = function (table, log, compare) {
     range: function (start, end, cb) {
       cb(null, table.slice(4+start*4, 8+end*4))
     },
+    seek: function (target, start, cb) {
+      seek(get, target, compare, start, 0, max, cb)
+    },
     search: function (target, cb) {
       //we need to know the maximum value
       search(get, target, compare, 0, max, function (err, idx, value) {
@@ -37,4 +42,5 @@ module.exports = function (table, log, compare) {
     }
   }
 }
+
 
