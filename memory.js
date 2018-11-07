@@ -1,6 +1,7 @@
 'use strict'
 var search = require('binary-search-async')
 var pull = require('pull-stream')
+var seek = require('binary-search-async/seek')
 
 //this is an in-memory index, must be rebuilt from the log.
 
@@ -18,7 +19,7 @@ module.exports = function (compare) {
   //read the current max from the end of the start of the index file.
 
   var index = [], sorted = false
-  var max = 0
+  var max = -1
 
   function sort () {
     if(!sorted) {
@@ -63,7 +64,12 @@ module.exports = function (compare) {
       sorted = false
       index.push(data)
     },
+    seek: function (target, start, cb) {
+      sort(),
+      seek(get, target, compare, start, 0, self.length()-1, cb)
+    },
     search: function (target, cb) {
+      if(self.length() === 0) cb(new Error('not found'))
       sort()
       //we need to know the maximum value
       search(get, target, compare, 0, self.length()-1, function (err, idx, value) {
