@@ -15,6 +15,7 @@ var Group = require('pull-group')
 var Obv = require('obv')
 var mkdirp = require('mkdirp')
 var cont = require('cont')
+var cpara = require('cont').para
 
 //generate an index following a log.
 
@@ -26,61 +27,23 @@ var cont = require('cont')
 //copy of the compaction strategy that just writes out files
 //when they pass threashold. ends up with lots of small files.
 
-function compact (log, dir, compare, indexes, cb) {
-  if(!indexes) {
-    console.log("COMPACT", log, dir, compare, indexes)
-    throw new Error('indexes must be provided')
-  }
-  var latest = indexes[0].latest()
-  var filename = path.join(dir, ''+latest+'.idx')
-  var c = 0, t = 0
-  pull(
-    Cat([
-      //save the `latest` because the file format keeps the length
-      //as the first value.
-      pull.values([[latest]]),
-      pCont(function (cb) {
-        indexes[0].range(0, indexes[0].length()-1, function (err, range) {
-          cb(null, pull.values([range]))
-        })
-      })
-    ]),
-    //TODO: rewrite without buffering.
-    pull.map(function (ary) {
-      c ++; t += Buffer.isBuffer(ary) ? ary.length/4 : ary.length 
-      if(Buffer.isBuffer(ary)) return ary
-      var buf = new Buffer(ary.length*4)
-      for(var i = 0; i < ary.length; i++)
-        buf.writeUInt32BE(ary[i], i*4)
-      return buf
-    }),
-    Group(1024*16),
-    pull.map(function (ary) {
-      return Buffer.concat(ary)
-    }),
-    WriteFile(filename, function (err) {
-      if(err) return cb(err)
-      //write metafile to temp location, then move it into place,
-      //so that compaction is atomic.
-      indexes[0] =
-        FileTable(path.join(dir, latest +'.idx'), log, compare)
-
-      cb(null, indexes, {
-        count: c, total: t,
-        average: t/c, since: latest
-      })
-    })
-  )
-}
-
 //compaction strategy that holds two files, and compacts
 //the new one into the big one. too slow, because recompacts
 //too much.
 
-function compact2 (log, dir, compare, indexes, cb) {
-  var compacting = indexes.slice(0, 2)
+function compaction (
+  log, dir, compare, merge,
+  indexes, index_to_compact, num_indexes, cb
+) {
+  var compacting = indexes.slice(index_to_compact, index_to_compact+num_indexes)
+  var a = indexes[index_to_compact], b = indexes[index_to_compact+1]
   var latest = compacting[0].latest()
-  var filename = path.join(dir, ''+latest+'.idx')
+  //compacting a single index only makes sense the first time the memtable is written
+
+//  if(compacting.length === 1)
+//    return cb(null, {count:0, total:0, average: NaN, since: latest})
+
+  var filename = path.join(dir, ''+Date.now()+'.idx')
   var c = 0, t = 0
   pull(
     Cat([
@@ -88,7 +51,7 @@ function compact2 (log, dir, compare, indexes, cb) {
       //as the first value.
       pull.values([[latest]]),
       compacting.length == 2
-      ? SparseMerge(compacting[0], compacting[1], compare)
+      ? merge(compacting[0], compacting[1], compare)
       : pCont(function (cb) {
           compacting[0].range(0, compacting[0].length()-1, function (err, range) {
             cb(null, pull.values([range]))
@@ -113,23 +76,76 @@ function compact2 (log, dir, compare, indexes, cb) {
       //write metafile to temp location, then move it into place,
       //so that compaction is atomic.
       var _indexes = indexes.slice()
-      _indexes.splice(
-        indexes.indexOf(compacting[0]),
-        compacting.length,
-        FileTable(
-          path.join(dir, compacting[0].latest() +'.idx'),
-          log,
-          compare
-        )
+      var i = indexes.indexOf(compacting[0])
+      var new_index = FileTable(
+//        path.join(dir, compacting[0].latest() +'.idx'),
+//        path.join(dir, compacting[0].latest() +'.idx'),
+        filename,
+        log,
+        compare
       )
-      cb(null, _indexes.filter(Boolean), {
-        count: c, total: t,
-        average: t/c, since: latest
+      _indexes.splice(
+        //search for the index again, just incase another compaction has happened.
+        i,
+        compacting.length,
+        //and insert the new index.
+        new_index
+      )
+      new_index.ready(function () {
+        cb(null, _indexes.filter(Boolean), {
+          input: compacting.map(function (index) {
+            return {size: index.length(), latest: index.latest()}
+          }),
+          count: c, total: t,
+          average: t/c, since: latest
+        })
       })
     })
   )
+
 }
 
+function compact2 (log, dir, compare, indexes, cb) {
+  return compaction(log, dir, compare, SparseMerge, indexes, 0, 2, cb)
+}
+
+function compact_single (log, dir, compare, indexes, cb) {
+  return compaction(log, dir, compare, null, indexes, 0, 1, cb)
+}
+
+function compact_recursive (log, dir, compare, indexes, cb) {
+  var data = {count:0, total:0, average:0,  since:0}
+  if(indexes.length === 1)
+    return compaction(log, dir, compare, null, indexes, 0, 1, cb)
+  if(indexes[0].length() < indexes[1].length()) {
+    return compaction(log, dir, compare, null, indexes, 0, 1, cb)
+  }
+
+  //if we have two indexes, approx the same size
+  ;(function recurse (i) {
+    if(i+1 >= indexes.length) return cb(null, indexes, data)
+    if(indexes[i].length() < indexes[i+1].length())
+      return cb(null, indexes, data)
+
+    console.error("COMPACTING", i, i+1, indexes[i].length(), indexes[i+1].length())
+    compaction(log, dir, compare, SparseMerge, indexes, i, 2, function (err, _indexes, _data) {
+      if(err) return cb(err)
+
+      indexes = _indexes
+      data.count += _data.count
+      data.total += data.total
+      data.average = data.count/data.total
+      data.since = Math.max(data.since, _data.since)
+      data.sizes = indexes.map(function (e) {
+        return {latest: e.latest(), length: e.length()}
+      })
+      console.log(data.sizes)
+
+      recurse(i+1)
+    })
+  })(0)
+
+}
 
 module.exports = function (log, dir, compare) {
   var metafile = path.join(dir, '/meta.json')
@@ -156,6 +172,19 @@ module.exports = function (log, dir, compare) {
           ))
         })
         since.set(meta.since)
+//        cpara(indexes.map(function (e) {
+//          return function (cb) { e.ready ? e.ready(cb) : cb() }
+//        })) (function () {
+//          since.set(meta.since)
+//        })
+
+//        log.since.once(function (_v) {
+//          var start = Date.now()
+//          since(function (v) {
+//            if(v === _v) console.log('loaded', Date.now()-start)
+//          })
+//        })
+
       }
     })
   })
@@ -188,7 +217,7 @@ module.exports = function (log, dir, compare) {
 
       var latest = indexes[0].latest()
       indexes.unshift(Index(compare))
-      compact2(log, dir, compare, indexes.slice(1), function (err, _indexes, status) {
+      compact_recursive(log, dir, compare, indexes.slice(1), function (err, _indexes, status) {
         if(err) return cb(err)
         fs.writeFile(metafile+'~', JSON.stringify(_meta = {
           since: latest, index: _indexes.map(function (e) {
@@ -251,7 +280,4 @@ module.exports = function (log, dir, compare) {
     indexes: function () { return indexes }
   }
 }
-
-
-
 
