@@ -37,8 +37,6 @@
   I'll need to measure this.
 */
 
-var search = require('binary-search-async')
-
 module.exports = function (a, b, compare) {
   if(!compare) throw new Error('sparse-merge: compare(a,b) must be provided')
   var i = 0, j = 0
@@ -57,7 +55,8 @@ module.exports = function (a, b, compare) {
     else
       a.get(i, function (err, value) {
         if(err) return cb(err)
-        search(b.get, value, compare, 0, b.length()-1, function (err, search_j, _value) {
+
+        b.search(value, function (err, _value, _seq, search_j) {
           if(err) return cb(err)
           if(search_j < 0) search_j = ~search_j
           b.range(j, search_j-1, function (err, range) {

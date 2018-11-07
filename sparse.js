@@ -14,7 +14,7 @@ module.exports = function (a, b, compare) {
   }
 
   function seek(x, value, i, cb) {
-    _seek(x.get, value, compare, i, 0, x.length()-1, cb)
+    x.seek(value, i, cb)
   }
 
   function more (cb) {
@@ -61,4 +61,7 @@ module.exports = function (a, b, compare) {
     else more(cb)
   }
 }
+
+
+
 
