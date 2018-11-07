@@ -9,8 +9,8 @@ var Index = require('../memory')
 var Table = require('../table')
 var FileTable = require('../file-table')
 var Stream = require('../stream')
-var SparseMerge = require('../sparse')
-
+var SparseMerge = require('../sparse-merge')
+var Sparse = require('../sparse')
 var mkdirp = require('mkdirp')
 
 var dir = '/tmp/test-normalized-index_'+Date.now()
@@ -82,8 +82,8 @@ log.append(data, function (err) {
     tests(name+'mem1,file2', index1, file2, Merge)
   }
 
-  group('overlapping(searching)', index1,index2, require('../sparse-merge'))
-  group('overlapping(seeking)', index1,index2, require('../sparse'))
+  group('overlapping(searching)', index1,index2, SparseMerge)
+  group('overlapping(seeking)', index1,index2, Sparse)
 
   var sorted = seqs.slice().sort(function (a, b) {
     return compare(a.value, b.value)
@@ -102,8 +102,8 @@ log.append(data, function (err) {
     if(!~b.find(function (f) { return f.value.i == e.value.i })) throw new Error('same item:'+i)
   })
 
-  group('non-overlapping(searching)', index3,index4, require('../sparse-merge'))
-  group('non-overlapping(seeking)', index3,index4, require('../sparse'))
+  group('non-overlapping(searching)', index3,index4, Sparse)
+  group('non-overlapping(seeking)', index3,index4, SparseMerge)
 })
 
 function tests (name, index1, index2, SparseMerge) {
@@ -139,7 +139,6 @@ function tests (name, index1, index2, SparseMerge) {
         //if it's non overlapping, k will be really small
         //if it's uniform, really big. (until fix by using seek)
       console.log('sparse-merge', Date.now()-start, k, index1.length(), index2.length(), c)
-//        console.log(k, c, N/c) //number of ranges, and average range length.
 
         pull(
           pull.values(ary),
@@ -161,9 +160,5 @@ function tests (name, index1, index2, SparseMerge) {
     )
   })
 }
-
-
-
-
 
 
