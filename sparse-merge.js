@@ -8,11 +8,13 @@
   the next read searches for the next greater value in what was a.
   and returns that range.
 
-  the resulting stream is written to a new index.
-  if one index is larger than the other, less comparsons are used.
-  or if the data is already kinda sorted, so that each side of
-  the merge only overlaps a bit. If there is no overlap, only one
-  comparison will be necessary.
+  the resulting stream can then be written to a new index.
+
+  if one index is larger than the other, less comparisons are used.
+  if the data is already kinda sorted, so that there is lots on
+  one side, then lots on the other. If there is no overlap, only one
+  comparison will be necessary. These will make the merge really fast,
+  and will read very few records from the main log.
 
   on a test merge with 900 vs 100 items, just 184 individual ranges
   were returned.
@@ -23,7 +25,8 @@
   cache. It would be even better to skip these comparsons, while
   maintaining alignment though.
 
-  XXX: this code _looks elegant_ but it's slower than streaming
+  XXX: this code _looks elegant_ but for randomish data,
+  with short runs, it's slower than just streaming
   the whole thing. seems like too many seaches. so should solve
   that above problem. on a uniformly random ordering ranges are
   too small for this method to help much.
@@ -31,7 +34,8 @@
   interesting! random values is the worst case. For non random
   values - i.e. values with runs, this is actually really fast.
   something that is mostly sorted (such as asserted time) will
-  be fine. so will something with only a few values, such as post.
+  be fine. so will something with only a few values, such as post
+  messages.
 
   even root is probably okay: replies are usually grouped in time.
   I'll need to measure this.

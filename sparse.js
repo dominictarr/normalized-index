@@ -1,4 +1,20 @@
 'use strict'
+/*
+  this is a better version of sparse-merge.js
+
+  instead of always starting the binary search from the top,
+  it seeks forward, looks from the last searched location,
+  stepping back up where the binary search came down (assuming
+  these values are likely still cached) and then drilling
+  down to the next item. This makes less comparisons
+  than top-down binary search.
+
+  But we really need a way to detect if it's doing a random
+  merge, and fall back to iteration. This might make a noticable
+  improvement in that case.
+
+*/
+
 var _seek = require('binary-search-async/seek')
 module.exports = function (a, b, compare) {
 
@@ -61,7 +77,5 @@ module.exports = function (a, b, compare) {
     else more(cb)
   }
 }
-
-
 
 
