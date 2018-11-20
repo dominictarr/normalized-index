@@ -88,7 +88,7 @@ function next2 () {
     var start = Date.now()
     gets = 0
     pull(
-      Stream(indexes, {gt: {key: 0}}, function (a, b) { return compare(a.value, b.value) }),
+      Stream(indexes, {gt: {key: 0}}, compare),
       pull.drain(null, function () {
         console.log('dump', Date.now()-start, gets)
         gets = 0
@@ -154,6 +154,8 @@ function next_merge (i) {
     )
   })(i)
 }
+
+
 
 
 

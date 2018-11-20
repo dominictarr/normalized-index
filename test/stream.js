@@ -119,7 +119,8 @@ function test(name, _opts, fn) {
           if(err) throw error(err)
           missing(t, ary, expected)
           t.equal(ary.length, expected.length)
-//          t.deepEqual(ary, opts.reverse ? expected.reverse() : expected)
+//          t.deepEqual(ary.sort(compare), expected) //opts.reverse ? expected.reverse() : expected)
+          t.deepEqual(ary, expected) //opts.reverse ? expected.reverse() : expected)
 
           return t.end()
           fn(t, ary)
