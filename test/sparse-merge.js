@@ -110,7 +110,7 @@ function tests (name, index1, index2, SparseMerge) {
 
   tape(name+':order', function (t)  {
     pull(
-      Stream([index1, index2], {}, compare),
+      Stream([index1, index2], {}),
       pull.collect(function (err, ary) {
         if(err) throw err
         t.deepEqual(ary, data.slice().sort(compare))

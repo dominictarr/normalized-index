@@ -88,7 +88,7 @@ function next2 () {
     var start = Date.now()
     gets = 0
     pull(
-      Stream(indexes, {gt: {key: 0}}, compare),
+      Stream(indexes, {gt: {key: 0}}),
       pull.drain(null, function () {
         console.log('dump', Date.now()-start, gets)
         gets = 0

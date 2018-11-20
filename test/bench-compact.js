@@ -10,7 +10,6 @@ var rmrf = require('rimraf')
 var mkdirp = require('mkdirp')
 var Compact = require('../compact')
 var SparseMerge = require('../sparse-merge')
-var Stream = require('../stream')
 
 var dir = '/tmp/test-normalized-index_compact'
 rmrf.sync(dir)
@@ -77,4 +76,5 @@ var N = 10000, M = 500000
     })
   })
 })(0)
+
 

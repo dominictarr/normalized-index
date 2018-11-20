@@ -79,7 +79,7 @@ tape('create table', function (t) {
 
 
 function all(index, opts, cb) {
-  pull(Stream(index, opts, compare), pull.collect(cb))
+  pull(Stream(index, opts), pull.collect(cb))
 }
 
 function error(err) {
