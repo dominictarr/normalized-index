@@ -8,6 +8,7 @@ var Stream = require('../stream')
 var pull = require('pull-stream')
 var mkdirp = require('mkdirp')
 var fs = require('fs')
+var ltgt = require('ltgt')
 
 var dir = '/tmp/test-normalized-index_'+Date.now()
 mkdirp.sync(dir)
@@ -86,8 +87,28 @@ function error(err) {
   return new Error('error without stack'+JSON.stringify(err))
 }
 
+function diff(actual, expected) {
+  var missing = []
+  expected.forEach(function (a) {
+    var b = actual.find(function (b) {
+      return compare(a, b) === 0
+    })
+    if(!b) missing.push(a)
+  })
+  return missing
+}
+
+function missing (t, actual, expected) {
+  t.deepEqual(diff(actual, expected), [], 'values were missing from output')
+  t.deepEqual(diff(expected, actual), [], 'extra values in output')
+}
+
 function test(name, _opts, fn) {
-  tape(name, function (t) {
+  var expected = a.filter(function (e) {
+    return ltgt.contains(_opts, e, compare)
+  })
+  tape(name + ' '  + JSON.stringify(_opts), function (t) {
+    console.log('TEST', _opts)
     function tests (n, index) {
       var opts = {}
       for(var k in _opts)
@@ -96,6 +117,11 @@ function test(name, _opts, fn) {
       t.test(n+name, function (t) {
         all(index, opts, function (err, ary) {
           if(err) throw error(err)
+          missing(t, ary, expected)
+          t.equal(ary.length, expected.length)
+//          t.deepEqual(ary, opts.reverse ? expected.reverse() : expected)
+
+          return t.end()
           fn(t, ary)
           opts.keys = true
           all(index, opts, function (err, with_keys) {
@@ -107,7 +133,8 @@ function test(name, _opts, fn) {
               return ~~e.key == e.key //is integer
             }), 'keys are integers')
 
-          fn(t, vals)
+            fn(t, vals)
+
             opts.values = false
             all(index, opts, function (err, keys) {
               t.deepEqual(keys, with_keys.map(function (e) { return e.key }))
@@ -134,6 +161,7 @@ function test(name, _opts, fn) {
     tests('table:', table)
     tests('file:', fileTable)
     tests('merge:', [table2, index2])
+
   })
 }
 
@@ -205,11 +233,20 @@ for(var n = 0; n < 10; n++) (function () {
     }))
   })
 
+  function assertRange(t, ary, range) {
+    ary.forEach(function (e) {
+      t.ok(range(e), JSON.stringify(e) + ' is within range')
+    })
+    t.deepEqual(ary.filter(range).length, a.filter(range).length)
+    t.deepEqual(ary.filter(range), a.filter(range)
+      .sort(compare))
+  }
+
   var s_part = { key: start.key.substring(0, 2)}
   var e_part = {key: end.key + '~'}
 
   test('stream part middle range, start inclusive:'+s_part.key +'=<'+end.key,
-  { gte: s_part, lt:  end }, function (t, ary) {
+  opts = { gte: s_part, lt:  end }, function (t, ary) {
     t.ok(ary.every(function (e) {
       if(!(compare(e, start) >= 0)) throw new Error(e.key+'>='+start.key)
       if(!(compare(e, end) < 0)) throw new Error(e.key+'<'+end.key)
