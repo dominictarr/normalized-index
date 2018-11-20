@@ -8,7 +8,7 @@
     "url": "git://github.com/dominictarr/normalized-index.git"
   },
   "dependencies": {
-    "aligned-block-file": "^1.1.2",
+    "aligned-block-file": "^1.1.4",
     "binary-search-async": "^1.1.1",
     "compare-at": "^1.0.0",
     "cont": "^1.0.3",
