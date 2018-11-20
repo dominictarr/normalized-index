@@ -48,6 +48,7 @@ module.exports = function (compare) {
   return self = {
     length: function () { return index.length },
     latest: function () { return max },
+    compare: compare,
     get: get,
     range: function (start, end, cb) {
       sort()

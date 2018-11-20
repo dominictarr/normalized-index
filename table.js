@@ -26,6 +26,7 @@ module.exports = function (table, log, compare) {
     })
   }
   return {
+    compare: compare,
     get: get,
     length: function () { return max + 1},
     range: function (start, end, cb) {
@@ -42,5 +43,6 @@ module.exports = function (table, log, compare) {
     }
   }
 }
+
 
 
