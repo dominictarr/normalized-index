@@ -60,7 +60,6 @@ module.exports = function Stream (index, opts, compare) {
     var i = opts.reverse ? u_index-- : l_index++
     index.get(i, function (err, value, key) {
       if(err) return cb(err)
-
       cb(null,
           keys && values ? {key: key, value: value}
         : keys           ? key
@@ -77,7 +76,7 @@ module.exports = function Stream (index, opts, compare) {
       if(lower !== undefined)
         index.search(lower, function (err, _, __, i) {
           if(error) return; if(err) return cb(error = err)
-          l_index = (i < 0 ? ~i + 1 : i)  + l_incl;
+          l_index = (i < 0 ? ~i : i + l_incl) ;
           l_index = Math.max(l_index, 0)
           if(~i === index.length()-1) l_index ++
           ready()
@@ -85,7 +84,7 @@ module.exports = function Stream (index, opts, compare) {
       if(upper !== undefined)
         index.search(upper, function (err, _, __, i) {
           if(error) return; if(err) return cb(error = err)
-          u_index = (i < 0 ? ~i - 1 : i) + u_incl
+          u_index = (i < 0 ? ~i - 1: i + u_incl)
           u_index = Math.min(u_index, index.length() - 1)
           ready()
         })
