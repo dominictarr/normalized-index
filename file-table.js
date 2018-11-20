@@ -2,6 +2,7 @@
 var search = require('binary-search-async')
 var Blocks = require('aligned-block-file')
 var seek = require('binary-search-async/seek')
+var Stream = require('./stream')
 /*
   sorted index stored in a binary file.
   the main database should be a series of these.
@@ -85,6 +86,9 @@ module.exports = function (file, log, compare, cb) {
           }
         })
       })
+    },
+    stream: function (opts) {
+      return Stream(this, opts)
     }
   }
 }

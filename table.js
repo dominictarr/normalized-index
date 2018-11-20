@@ -8,6 +8,7 @@
 
 var search = require('binary-search-async')
 var seek = require('binary-search-async/seek')
+var Stream = require('./stream')
 
 module.exports = function (table, log, compare) {
   if(!Buffer.isBuffer(table)) throw new Error('table should be a buffer')
@@ -40,9 +41,13 @@ module.exports = function (table, log, compare) {
       search(get, target, compare, 0, max, function (err, idx, value) {
         cb(err, value, idx >= 0 ? offset(idx) : null, idx)
       })
+    },
+    stream: function (opts) {
+      return Stream(this, opts)
     }
   }
 }
+
 
 
 

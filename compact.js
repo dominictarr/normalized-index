@@ -9,7 +9,7 @@ var pCont = require('pull-cont')
 
 var Index = require('./memory')
 var FileTable = require('./file-table')
-var Stream = require('./stream')
+var MergeStream = require('./merge-stream')
 var SparseMerge = require('./sparse')
 var Group = require('pull-group')
 var Obv = require('obv')
@@ -237,21 +237,10 @@ module.exports = function (log, dir, compare) {
 
     },
     stream: function (opts) {
+      opts = opts || {}
       if(opts && opts.index != null)
-        return Stream(indexes[opts.index], opts)
-
-      if(indexes.length > 1)
-        return pCont(function (cb) {
-          cont.para(indexes.map(function (index) {
-            return function (cb) {
-              if(!index.ready) cb()
-              else index.ready(cb)
-            }
-          })) (function () {
-            cb(null, Stream(indexes, opts, compare))
-          })
-        })
-      return Stream(indexes[0], opts)
+        return indexes[opts.index].stream(opts)
+      return MergeStream(indexes, opts)
     },
     add: function (op) {
       //only add to most recent index
@@ -274,9 +263,4 @@ module.exports = function (log, dir, compare) {
     indexes: function () { return indexes }
   }
 }
-
-
-
-
-
 

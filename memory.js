@@ -2,6 +2,7 @@
 var search = require('binary-search-async')
 var pull = require('pull-stream')
 var seek = require('binary-search-async/seek')
+var Stream = require('./stream')
 
 //this is an in-memory index, must be rebuilt from the log.
 
@@ -86,6 +87,9 @@ module.exports = function (compare) {
         b.writeUInt32BE(e.key, 4+i*4)
       })
       return b
+    },
+    stream: function (opts) {
+      return Stream(this, opts)
     }
   }
 }
@@ -93,4 +97,5 @@ module.exports = function (compare) {
 process.on('exit', function () {
   console.log("normalized-index:sorts", SORT_COUNT, SORT_TIME, SORT_MAX)
 })
+
 
