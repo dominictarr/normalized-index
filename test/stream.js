@@ -211,6 +211,9 @@ for(var n = 0; n < 10; n++) (function () {
   var start = a[Math.min(x, y)]
   var end = a[Math.max(x, y)]
 
+  var first = a[0]
+  var last = a[a.length-1]
+
   test('stream middle range:'+start.key +'<'+end.key, {gt: start, lt: end}, function (t, ary) {
     t.ok(ary.every(function (e) {
       return compare(e, start) > 0 && compare(e, end) < 0
@@ -282,5 +285,21 @@ for(var n = 0; n < 10; n++) (function () {
       return true
     }))
   })
+
+  test('stream just first: =<'+first.key,
+  { lte: first}, function () {})
+  test('stream just last: =<'+first.key,
+  { gte: last}, function () {})
+
+//  test('stream just first: =<'+first.key,
+//  { lte: first}, function () {})
+  var l_part = last.key.substring(0, 2)
+  test('stream just last: >='+l_part,
+  { gte: {key: l_part}}, function () {})
+
+
 })()
+
+
+
 
