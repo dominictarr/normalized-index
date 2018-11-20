@@ -4,11 +4,22 @@ var FlumeLog = require('flumelog-offset')
 var Index = require('../memory')
 var IndexTable = require('../table')
 var IndexFile = require('../file-table')
-var Stream = require('../stream')
 var pull = require('pull-stream')
 var mkdirp = require('mkdirp')
 var fs = require('fs')
 var ltgt = require('ltgt')
+
+var MergeStream = require('../merge-stream')
+
+function Merged () {
+  var indexes = [].slice.call(arguments)
+  return {
+    stream: function (opts) {
+      return MergeStream(indexes, opts)
+    },
+    indexes: indexes
+  }
+}
 
 var dir = '/tmp/test-normalized-index_'+Date.now()
 mkdirp.sync(dir)
@@ -79,7 +90,7 @@ tape('create table', function (t) {
 
 
 function all(index, opts, cb) {
-  pull(Stream(index, opts), pull.collect(cb))
+  pull(index.stream(opts), pull.collect(cb))
 }
 
 function error(err) {
@@ -161,7 +172,7 @@ function test(name, _opts, fn) {
     tests('mem:', index)
     tests('table:', table)
     tests('file:', fileTable)
-    tests('merge:', [table2, index2])
+    tests('merge:', Merged(table2, index2))
 
   })
 }
@@ -299,6 +310,7 @@ for(var n = 0; n < 10; n++) (function () {
 
 
 })()
+
 
 
 
