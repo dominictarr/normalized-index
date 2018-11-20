@@ -237,14 +237,8 @@ module.exports = function (log, dir, compare) {
 
     },
     stream: function (opts) {
-      //TODO: I'm always fixing this thing in stream where
-      //it doesn't compare on the value property.
-      function _compare (a, b) {
-        return compare(a.value, b.value)
-      }
-
       if(opts && opts.index != null)
-        return Stream(indexes[opts.index], opts, _compare)
+        return Stream(indexes[opts.index], opts)
 
       if(indexes.length > 1)
         return pCont(function (cb) {
@@ -254,10 +248,10 @@ module.exports = function (log, dir, compare) {
               else index.ready(cb)
             }
           })) (function () {
-            cb(null, Stream(indexes, opts, _compare))
+            cb(null, Stream(indexes, opts, compare))
           })
         })
-      return Stream(indexes[0], opts, _compare)
+      return Stream(indexes[0], opts)
     },
     add: function (op) {
       //only add to most recent index
@@ -280,4 +274,9 @@ module.exports = function (log, dir, compare) {
     indexes: function () { return indexes }
   }
 }
+
+
+
+
+
 

@@ -20,17 +20,18 @@ module.exports = function Stream (index, opts, compare) {
     // then output the intermediate keys (since an LSM of a normalized index only needs keys)
 
     if(index.length === 1)
-      return Stream(index[0], opts, compare)
+      return Stream(index[0], opts)
 
     var keys = opts.keys === true
     var values = opts.values !== false
     opts.keys = true
     opts.values = true
+    var reverse = (opts.reverse ? -1 : 1)
     return pull(
       Merge(index.map(function (i) {
-          return Stream(i, opts, compare)
+          return Stream(i, opts)
       }), function (a, b) {
-        return compare(a, b) * (opts.reverse ? -1 : 1)
+        return compare(a.value, b.value) * reverse
       }),
       Map(function (e) {
         return keys && values ? e : keys ? e.key : e.value
@@ -98,4 +99,7 @@ module.exports = function Stream (index, opts, compare) {
       next(cb)
   }
 }
+
+
+
 
