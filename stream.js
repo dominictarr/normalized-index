@@ -1,44 +1,8 @@
 'use strict'
-var Merge = require('pull-merge')
-var pull = require('pull-stream/pull')
-var Map = require('pull-stream/throughs/map')
 
-function flip(cmp) {
-  return function (a, b) {
-    return cmp(a, b)*-1
-  }
-}
-
-module.exports = function Stream (index, opts, compare) {
+module.exports = function Stream (index, opts) {
   opts = opts || {}
-  if(Array.isArray(index)) {
-
-    // if index is an array of indexes, search all of them and merge.
-    // this is correct, but likely not optimal in the case of
-    // Log Structered Merge. I figure that a LSM merge likely has one index
-    // much larger than another ("sparse merge") so you could search ahead to find i: B[i] < A[j]
-    // then output the intermediate keys (since an LSM of a normalized index only needs keys)
-
-    if(index.length === 1)
-      return Stream(index[0], opts)
-
-    var keys = opts.keys === true
-    var values = opts.values !== false
-    opts.keys = true
-    opts.values = true
-    var reverse = (opts.reverse ? -1 : 1)
-    return pull(
-      Merge(index.map(function (i) {
-          return Stream(i, opts)
-      }), function (a, b) {
-        return compare(a.value, b.value) * reverse
-      }),
-      Map(function (e) {
-        return keys && values ? e : keys ? e.key : e.value
-      })
-    )
-
-  }
+  if(Array.isArray(index)) return require('./merge-stream')(index, opts)
 
   var lower, upper, l_index, u_index
   var u_incl, l_incl
@@ -81,6 +45,7 @@ module.exports = function Stream (index, opts, compare) {
           l_index = Math.max(l_index, 0)
           ready()
         })
+      //would it be better to search for one end then compare?
       if(upper !== undefined)
         index.search(upper, function (err, _, __, i) {
           if(error) return; if(err) return cb(error = err)
