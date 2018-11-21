@@ -27,7 +27,7 @@ mkdirp.sync(dir)
 var log = FlumeLog(dir+'/log', {codec: require('flumecodec/json')})
 
 function compare (a, b) {
-  return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+  return a.key < b.key ? -1 : a.key > b.key ? 1 : a.random - b.random
 }
 var index = Index(compare)
 var index2, fileTable
@@ -43,9 +43,19 @@ pull(
 var table, table2
 
 var alpha = 'abcdefghijklmnopqrstuvwxyz'
-var a = []
-for(var i = 0; i + 2 < alpha.length; i++)
-  a.push({key: alpha[i] + alpha[i+1] + alpha[i+2], seq: i+10})
+var a = [], j = 0
+for(var i = 0; i + 2 < alpha.length; i++) {
+  do {
+    var value = {
+      key: alpha[i] + alpha[i+1] + alpha[i+2],
+      seq: j++,
+      random: Math.random()
+    }
+    a.push(value)
+  } while (value.random < 0.1)
+}
+
+a.sort(compare)
 
 tape('alphabet', function (t) {
 
@@ -133,7 +143,6 @@ function test(name, _opts, fn) {
 //          t.deepEqual(ary.sort(compare), expected) //opts.reverse ? expected.reverse() : expected)
           t.deepEqual(ary, expected) //opts.reverse ? expected.reverse() : expected)
 
-          return t.end()
           fn(t, ary)
           opts.keys = true
           all(index, opts, function (err, with_keys) {
@@ -178,7 +187,7 @@ function test(name, _opts, fn) {
 }
 
 test('everthing', {}, function (t, ary) {
-  t.equal(ary.length, 24)
+  t.equal(ary.length, a.length)
 })
 
 var i = ~~(Math.random() * a.length)
@@ -197,7 +206,6 @@ test('empty stream, before after end, open', {gt: {key:'~'}}, assertEmpty)
 test('empty stream, >= end, open', {gte: {key:'~'}}, assertEmpty)
 
 test('stream to half-way : >='+target.key, {gte: target}, function (t, ary) {
-  console.log(ary, target)
   t.ok(ary.every(function (e) {
     if(!(compare(e, target) >= 0)) throw new Error(e.key+'>='+target.key)
     return true
@@ -263,7 +271,7 @@ for(var n = 0; n < 10; n++) (function () {
   test('stream part middle range, start inclusive:'+s_part.key +'=<'+end.key,
   opts = { gte: s_part, lt:  end }, function (t, ary) {
     t.ok(ary.every(function (e) {
-      if(!(compare(e, start) >= 0)) throw new Error(e.key+'>='+start.key)
+      if(!(compare(e, s_part) >= 0)) throw new Error(JSON.stringify(e)+'>='+JSON.stringify(start))
       if(!(compare(e, end) < 0)) throw new Error(e.key+'<'+end.key)
       return true
     }))
@@ -302,16 +310,33 @@ for(var n = 0; n < 10; n++) (function () {
   test('stream just last: =<'+first.key,
   { gte: last}, function () {})
 
-//  test('stream just first: =<'+first.key,
-//  { lte: first}, function () {})
   var l_part = last.key.substring(0, 2)
   test('stream just last: >='+l_part,
   { gte: {key: l_part}}, function () {})
 
+  test('stream eq:'+start.key, {gte: {key:start.key, random: 0}, lte: {key:start.key, random: 1}}, 
+    function (t, ary){
+      console.log(ary)
+      t.ok(ary.length) //1 or more
+      t.equal(ary[0].key, start.key)
+      ary.every(function (e) {
+        t.equal(e.key, start.key)
+      })
+    })
+
+//if you pass an object with undefined keys, should it
+//automatically insert top and bottom range values when searching?
+//i'm gonna say: no.
+
+//  test('stream eq:'+start.key, {gte: {key:start.key}, lte: {key:start.key}}, 
+//    function (t, ary){
+//      console.log(ary)
+//      t.ok(ary.length) //1 or more
+//      t.equal(ary[0].key, start.key)
+//      ary.every(function (e) {
+//        t.equal(e.key, start.key)
+//      })
+//    })
 
 })()
-
-
-
-
 
