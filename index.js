@@ -70,7 +70,7 @@ module.exports = function FlumeViewNormalizedIndex (version, paths) {
         if(i >= _indexes.length) cb(new Error('not found'))
         else
           _indexes[i].search(target, function (err, value, seq) {
-            if(compare(target, value) === 0) cb(null, value)
+            if(compare(value, target) === 0) cb(null, value)
             else recurse(i+1)
           })
       })(0)
