@@ -3,11 +3,14 @@ var CompareAt = require('compare-at')
 var Compactor = require('./compact')
 var path = require('path')
 var Take = require('pull-stream/throughs/take')
-var K = 65536/2
+var K = 65536
 
-module.exports = function FlumeViewNormalizedIndex (version, paths) {
-
-  var compare = CompareAt(paths), has = CompareAt.hasPath(paths)
+module.exports = function FlumeViewNormalizedIndex (version, opts) {
+  if(Array.isArray(opts)) {
+    opts = {paths: opts}
+  }
+  var compare = opts.compare || CompareAt.createCompareAuto(opts.paths)
+  var has = opts.has || CompareAt.hasPath(opts.paths)
 
   return function (log, name) {
     if(!log.filename) throw new Error('in memory index not supported')
@@ -18,6 +21,7 @@ module.exports = function FlumeViewNormalizedIndex (version, paths) {
     )
 
     if(!compactor) throw new Error('weird')
+    var C = 0
     compactor.createSink = function (cb) {
       return function (read) {
         read(null, function again (err, data) {
@@ -28,9 +32,19 @@ module.exports = function FlumeViewNormalizedIndex (version, paths) {
             //when we hit a threashold, wait until we have compacted.
             //It would be better to dump tables quickly,
             //then compact them in the background.
-            if(compactor.indexes()[0].length() < K)
-              read(null, again)
-            else {
+            if(compactor.indexes()[0].length() < K) {
+              //set immediate here makes building many indexes
+              //significantly faster, because it caches much better.
+              //without setImmediate, one index races ahead,
+              //while the others are still behind, so the first
+              //reads many values into the cache, pushes the old
+              //values out, and they must then read them again.
+              //difference is big:
+              // 9 indexes in 9 minutes without this
+              // but only takes 6 minutes with this!
+              //(flumelog-query does the same 9 indexes in 3 min, beating that is the target)
+              setImmediate(function () { read(null, again) })
+            } else {
               console.error(name+':compacting', compactor.indexes().map(function (e) { return e.length() }))
               var start = Date.now(), c = compactor.indexes().reduce(function (a, b) {
                 return a + b.length() || 0
