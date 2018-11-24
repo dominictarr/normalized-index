@@ -78,8 +78,6 @@ function compaction (
       var _indexes = indexes.slice()
       var i = indexes.indexOf(compacting[0])
       var new_index = FileTable(
-//        path.join(dir, compacting[0].latest() +'.idx'),
-//        path.join(dir, compacting[0].latest() +'.idx'),
         filename,
         log,
         compare
@@ -153,39 +151,37 @@ module.exports = function (log, dir, compare) {
   var cbs = [], meta
   var since = Obv()
   mkdirp(dir, function () {
-    fs.readFile(metafile, function (err, value) {
-      if(err)
-        since.set(-1)
-      else {
-        try {
-          meta = JSON.parse(value)
-          if(!Array.isArray(meta.index)) //old format
-            meta.index = [meta.index]
-        } catch (err) {
-          return since.set(-1)
+    fs.readdir(dir, function (err, ls) {
+      fs.readFile(metafile, function (err, value) {
+        if(err)
+          since.set(-1)
+        else {
+          try {
+            meta = JSON.parse(value)
+            if(!Array.isArray(meta.index)) //old format
+              meta.index = [meta.index]
+          } catch (err) {
+            return since.set(-1)
+          }
+          meta.index.forEach(function (index) {
+            indexes.push(FileTable(
+              path.join(dir, index),
+              log,
+              compare
+            ))
+          })
+          //delete any index files that are no longer needed.
+          cpara(ls.filter(function (filename) {
+            return /\.idx$/.test(filename) && !~meta.index.indexOf(filename)
+          }).map(function (filename) {
+            return function (cb) {
+              fs.unlink(path.join(dir, filename), cb)
+            }
+          })) (function (_) {
+            since.set(meta.since)
+          })
         }
-        meta.index.forEach(function (index) {
-          indexes.push(FileTable(
-            path.join(dir, index),
-            log,
-            compare
-          ))
-        })
-        since.set(meta.since)
-//        cpara(indexes.map(function (e) {
-//          return function (cb) { e.ready ? e.ready(cb) : cb() }
-//        })) (function () {
-//          since.set(meta.since)
-//        })
-
-//        log.since.once(function (_v) {
-//          var start = Date.now()
-//          since(function (v) {
-//            if(v === _v) console.log('loaded', Date.now()-start)
-//          })
-//        })
-
-      }
+      })
     })
   })
 
@@ -217,7 +213,9 @@ module.exports = function (log, dir, compare) {
 
       var latest = indexes[0].latest()
       indexes.unshift(Index(compare))
-      compact_recursive(log, dir, compare, indexes.slice(1), function (err, _indexes, status) {
+//      compact_single
+      compact_recursive
+      (log, dir, compare, indexes.slice(1), function (err, _indexes, status) {
         if(err) return cb(err)
         fs.writeFile(metafile+'~', JSON.stringify(_meta = {
           since: latest, index: _indexes.map(function (e) {
