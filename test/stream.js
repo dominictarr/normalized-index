@@ -8,7 +8,7 @@ var pull = require('pull-stream')
 var mkdirp = require('mkdirp')
 var fs = require('fs')
 var ltgt = require('ltgt')
-
+var CompareAt = require('compare-at')
 var MergeStream = require('../merge-stream')
 
 function Merged () {
@@ -26,9 +26,12 @@ mkdirp.sync(dir)
 
 var log = FlumeLog(dir+'/log', {codec: require('flumecodec/json')})
 
-function compare (a, b) {
-  return a.key < b.key ? -1 : a.key > b.key ? 1 : a.random - b.random
-}
+var paths = [['key'], ['random']]
+var compare = CompareAt.createCompareAuto(paths)
+
+//function compare (a, b) {
+//  return a.key < b.key ? -1 : a.key > b.key ? 1 : a.random - b.random
+//}
 var index = Index(compare)
 var index2, fileTable
 pull(
@@ -124,7 +127,7 @@ function missing (t, actual, expected) {
   t.deepEqual(diff(expected, actual), [], 'extra values in output')
 }
 
-function test(name, _opts, fn) {
+function _test(name, _opts, fn) {
   var expected = a.filter(function (e) {
     return ltgt.contains(_opts, e, compare)
   })
@@ -178,12 +181,38 @@ function test(name, _opts, fn) {
         })
       })
     }
+
     tests('mem:', index)
     tests('table:', table)
     tests('file:', fileTable)
     tests('merge:', Merged(table2, index2))
 
   })
+}
+
+function isEmpty (o) {
+  for(var k in o)
+    return false
+  return true
+}
+
+function test (name, opts, fn) {
+  _test(name, opts, fn)
+  if(isEmpty(opts)) return
+  try {
+    //throws if the range doesn't have all the fields defined.
+    //if left out they should default to sentinels null, undefined
+    var _opts = ltgt.toLtgt(opts, {}, function (v, lower) {
+//      console.log('map', v, paths)
+      return CompareAt.getValuePath(v, paths)
+    }, undefined, null)
+  } catch (err) {
+
+  }
+  if(_opts) {
+//    console.log("OPTS", _opts, opts)
+    _test(name, _opts, fn)
+  }
 }
 
 test('everthing', {}, function (t, ary) {
@@ -339,4 +368,5 @@ for(var n = 0; n < 10; n++) (function () {
 //    })
 
 })()
+
 
