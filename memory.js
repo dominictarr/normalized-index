@@ -32,7 +32,7 @@ module.exports = function (compare) {
       global.SORT_COUNT += 1
       global.SORT_TIME+=time
       global.SORT_MAX = Math.max(global.SORT_MAX, time)
-      console.log('sort time:', time, global.SORT_TIME, global.SORT_MAX)
+      console.log('sort time:', time, global.SORT_TIME, global.SORT_MAX, index.length)
       sorted = true
     }
   }
@@ -89,6 +89,9 @@ module.exports = function (compare) {
       return b
     },
     stream: function (opts) {
+      //TODO: stream should hold a reference to the index.
+      //and index should be copied if sort() is called while streaming.
+      //(or something like that to create snapshots)
       return Stream(this, opts)
     }
   }
