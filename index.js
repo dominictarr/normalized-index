@@ -29,10 +29,17 @@ module.exports = function FlumeViewNormalizedIndex (version, opts) {
           if(has(data.value)) {
               compactor.add({key:data.seq, value:data.value})
             //simple strategy for managing write flow:
-            //when we hit a threashold, wait until we have compacted.
-            //It would be better to dump tables quickly,
-            //then compact them in the background.
-            if(compactor.indexes()[0].length() < K) {
+            //when we hit a threashold, then compact.
+            //when we catch up with main log, compact.
+            //reading stops during compaction.
+
+            function nice (paths) {
+              return paths.map(function (e) {
+                return e.join('.')
+              }).join(';')
+            }
+
+            if(compactor.indexes()[0].length() < K && (log.since.value === undefined || data.seq < log.since.value)) {
               //set immediate here makes building many indexes
               //significantly faster, because it caches much better.
               //without setImmediate, one index races ahead,
@@ -57,25 +64,28 @@ module.exports = function FlumeViewNormalizedIndex (version, opts) {
             }
           }
           else {
-            setImmediate(function () {
-              compactor.since.set(data.seq)
-              read(null, again)
-            })
+            //compact when the index gets in sync with the log.
+            //not every record is in every index, so maybe
+            //compact even if we did not add anything.
+            compactor.since.set(data.seq)
+            if(data.seq === log.since.value)
+              compactor.compact(function (err, status) {
+                console.error(name+':compacted!', Date.now() - start, c)
+                console.error(status)
+                read(null, again)
+              })
+            else
+              setImmediate(function () {
+//                compactor.since.set(data.seq)
+                read(null, again)
+              })
           }
         })
       }
     }
 
-    compactor.get = function (key, cb) {
-      compactor.search({key:key}, cb)
-//      var source = compactor.stream({gte: {key:key}, limit: 1})
-//      source(null, function (err, data) {
-//        if(err === true) cb(new Error('not found'))
-//        else if(err) cb(err)
-//        else source(true, function () {
-//          cb(null, data)
-//        })
-//      })
+    compactor.get = function (values, cb) {
+      compactor.search('string' === typeof values ? [values] : values, cb)
     }
 
     compactor.search = function (target, cb) {
@@ -110,4 +120,3 @@ module.exports = function FlumeViewNormalizedIndex (version, opts) {
     return compactor
   }
 }
-
