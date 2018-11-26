@@ -92,13 +92,14 @@ module.exports = function FlumeViewNormalizedIndex (version, opts) {
       var _indexes = compactor.indexes() //take a snapshot, incase of a compaction
       ;(function recurse (i) {
         if(i >= _indexes.length) cb(new Error('not found'))
-        else
+        else if(_indexes[i].length())
           _indexes[i].search(target, function (err, value, seq) {
             if(compare(value, target) === 0) cb(null, value)
             else recurse(i+1)
           })
+        else
+          recurse(i+1)
       })(0)
-
     }
 
     compactor.read = function (opts) {
