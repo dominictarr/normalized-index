@@ -89,6 +89,8 @@ module.exports = function (compare) {
       return b
     },
     stream: function (opts) {
+      if(index.length === 0)
+        return function (abort, cb) { cb(true) }
       //TODO: stream should hold a reference to the index.
       //and index should be copied if sort() is called while streaming.
       //(or something like that to create snapshots)
@@ -100,5 +102,6 @@ module.exports = function (compare) {
 process.on('exit', function () {
   console.log("normalized-index:sorts", SORT_COUNT, SORT_TIME, SORT_MAX)
 })
+
 
 

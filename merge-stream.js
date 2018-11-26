@@ -13,7 +13,7 @@ module.exports = function (indexes, opts) {
   var reverse = (opts.reverse ? -1 : 1)
   return pull(
     Merge(indexes.map(function (i) {
-        return Stream(i, opts)
+        return i.stream(opts)
     }), function (a, b) {
       return compare(a.value, b.value) * reverse
     }),
